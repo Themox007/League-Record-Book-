@@ -85,7 +85,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rx=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const p2=n=>Number(n).toFixed(2);
-let M={},scores=[],games=[],seasons=[],aliases=[],latest={year:0,week:0};
+let M={},scores=[],games=[],seasons=[],aliases=[],latest={year:0,week:0},pRows=[],plist=[],byLast={};
+const norm=s=>s.toLowerCase().replace(/[.'’`\/]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/ (jr|sr|ii|iii|iv|v)$/,'').trim();
+const STOP=new Set('week weeks score scores scored point points season seasons year most least lowest highest best worst fewest biggest record average bench benched player players playoff playoffs final finals loss lost wins ever time total game games this last with from have what when many much does that their played start started rank high'.split(' '));
 const nm=id=>id&&M[id]?M[id].name:'Unknown';
 
 function build(d){
@@ -109,14 +111,26 @@ function build(d){
       }else scores.push(mk(sides[0],null));
     }
   }
+  const P=d.players||{},tot={};
+  for(const s of seasons){
+    const tm={};s.teams.forEach(t=>tm[t.teamId]=t);
+    for(const r of s.playerWeeks||[]){
+      const t=tm[r[1]],p=P[r[2]];if(!t||!p)continue;
+      pRows.push({year:s.year,week:r[0],m:t.managerId,team:t.name,pid:String(r[2]),name:p[0],pos:p[1],slot:r[3],pts:r[4]});
+      tot[r[2]]=(tot[r[2]]||0)+r[4];
+    }
+  }
+  for(const id in tot){const n=norm(P[id][0]),p={id:String(id),name:P[id][0],norm:n,total:tot[id]};plist.push(p);
+    const last=n.split(' ').pop();(byLast[last]=byLast[last]||[]).push(p)}
+  for(const k in byLast)byLast[k].sort((a,b)=>b.total-a.total);
   for(const s of scores)if(s.year>latest.year||(s.year===latest.year&&s.week>latest.week))latest={year:s.year,week:s.week};
   const firsts={};
   for(const id in M){const f=M[id].name.toLowerCase().split(' ')[0];firsts[f]=(firsts[f]||0)+1}
   for(const id in M){
     const full=M[id].name.toLowerCase().replace(/\.$/,''),f=full.split(' ')[0];
-    aliases.push({id,re:new RegExp('\\b'+rx(full)+'(?![a-z])')});
-    if(firsts[f]===1&&f.length>1)aliases.push({id,re:new RegExp('\\b'+rx(f)+'\\b')});
-    (teamNames[id]||[]).forEach(t=>{if(t.length>3)aliases.push({id,re:new RegExp(rx(t.toLowerCase()))})});
+    aliases.push({id,first:f,re:new RegExp('\\b'+rx(full)+'(?![a-z])')});
+    if(firsts[f]===1&&f.length>1)aliases.push({id,first:f,re:new RegExp('\\b'+rx(f)+'\\b')});
+    (teamNames[id]||[]).forEach(t=>{if(t.length>3)aliases.push({id,team:true,re:new RegExp(rx(t.toLowerCase()))})});
   }
 }
 
@@ -129,10 +143,23 @@ function parse(raw){
   const w=q.match(/\b(?:week|wk|round)\s*(\d{1,2})\b/);if(w)sc.week=+w[1];
   else if(has(/(this|last|latest) week|most recent/)){sc.week=latest.week;sc.year=sc.year||latest.year}
   if(has(/playoff|final/))sc.phase='playoffs';else if(has(/regular season/))sc.phase='regular';
-  for(const a of aliases)if(a.re.test(q)&&!sc.ms.includes(a.id))sc.ms.push(a.id);
+  // players first, so a team named after a player doesn't hijack the search
+  const qn=' '+norm(raw)+' ';let player=null,others=[];
+  const fullHits=plist.filter(p=>qn.includes(' '+p.norm+' ')).sort((a,b)=>b.norm.length-a.norm.length||b.total-a.total);
+  if(fullHits.length){player=fullHits[0];others=fullHits.slice(1).filter(p=>p.norm===player.norm)}
+  else for(const t of qn.trim().split(' ')){
+    if(t.length<4||STOP.has(t)||!byLast[t]||aliases.some(a=>a.first===t))continue;
+    player=byLast[t][0];others=byLast[t].slice(1,4);break}
+  let qm=q;if(player)player.norm.split(' ').forEach(t=>{qm=qm.replace(new RegExp('\\b'+rx(t)+'\\b','g'),' ')});
+  for(const a of aliases)if(!(player&&a.team)&&a.re.test(qm)&&!sc.ms.includes(a.id))sc.ms.push(a.id);
   const low=has(/least|lowest|worst|fewest|\blow\b|bottom|minimum|smallest|\bdud|\bbad|last place/);
+  const hi=has(/most|highest|best|\btop\b|biggest|record|maximum/);
+  const pos=has(/\bqbs?\b|quarterback/)?'QB':has(/\brbs?\b|running ?back/)?'RB':has(/\bwrs?\b|receiver/)?'WR':has(/\btes?\b|tight ?end/)?'TE':has(/kicker/)?'K':has(/d\/?st\b|defen[cs]e/)?'D/ST':null;
   let kind=null;
-  if(sc.ms.length>=2)kind='h2h';
+  if(player)kind='player';
+  else if(has(/bench/))kind='bench';
+  else if(pos||has(/\bplayers?\b/))kind='pboard';
+  else if(sc.ms.length>=2)kind='h2h';
   else if(has(/champ|title|trophy|premiership|who won|won the league|winners?\b/)&&!has(/streak/))kind='champs';
   else if(has(/blowout|biggest (win|loss|margin)|largest margin|smash|thrash|flogging/))kind='blowout';
   else if(has(/closest|narrowest|tightest|nail.?biter|smallest margin/))kind='closest';
@@ -141,14 +168,17 @@ function parse(raw){
   else if(has(/luck|in a win|and won|won with|winning score/))kind='lucky';
   else if(has(/shootout|combined|highest.scoring (game|matchup)/))kind='shootout';
   else if(has(/(in|for|over) a (single |whole |full )?season|season totals?|per season/))kind='seasonpts';
-  else if(has(/average|\bavg\b|per game|\bppg\b/))kind='avg';
+  else if(has(/av[ea]?r[a-z]*g|\bavg\b|\bave\b|per game|\bppg\b|\bmean\b|on average/))kind='avg';
   else if(has(/total points|points for|career points|all.?time points/))kind='totalpts';
   else if(has(/standing|record\b|\bwins?\b|loss(es)?\b|ladder|\btable\b|rank|win (percentage|%|rate)/)&&!has(/score/))kind='standings';
   else if(low)kind='low';
   else if(has(/most|highest|best|\btop\b|biggest|record|point|score/))kind='high';
   else if(sc.ms.length===1)kind='profile';
-  return {kind,sc,low};
+  return {kind,sc,low,hi,pos,player,others};
 }
+const lineup=r=>r.slot===1?'Started':r.slot===2?'On IR':'Bench';
+const pwhen=r=>'Week '+r.week+', '+r.year;
+const pfor=r=>(r.slot===1?'started for ':r.slot===2?'on IR for ':'on the bench for ')+nm(r.m)+' ('+r.team+')';
 
 function inScope(x,sc,opt){
   opt=opt||{};
@@ -179,10 +209,35 @@ function group(list,key){const o={};list.forEach(x=>{(o[key(x)]=o[key(x)]||[]).p
 const sum=(l,f)=>l.reduce((a,x)=>a+f(x),0);
 
 function answer(raw){
-  const {kind,sc,low}=parse(raw);
+  const {kind,sc,low,hi,pos,player,others}=parse(raw);
   const mine=s=>!sc.ms.length||sc.ms.includes(s.m);
   const none={labels:['No results'],big:'Nothing found',sub:'No finished games match that. Try a different week or season.'};
-  if(!kind)return {labels:["Didn't catch that"],big:'Try another way',sub:'Ask about scores, records, blowouts, streaks, champions, or type two managers to compare them.'};
+  if(!kind)return {labels:["Didn't catch that"],big:'Try another way',sub:'Ask about scores, records, blowouts, streaks, champions, a player, or type two managers to compare them.'};
+
+  if(kind==='player'||kind==='bench'||kind==='pboard'){
+    if(!pRows.length)return {labels:['Players'],big:'No player scores yet',sub:'Player scores load the next time the weekly update runs.'};
+    const sp={...sc,phase:null},inP=r=>(!sc.year||r.year===sc.year)&&(!sc.week||r.week===sc.week)&&mine(r);
+    const ptable=(l,withName)=>({cols:(withName?['#','Player']:[]).concat(['When','Points:n','Manager','Lineup']),
+      rows:l.map((r,i)=>(withName?[i+1,{k:r.name,small:r.pos}]:[]).concat([pwhen(r),p2(r.pts),{k:nm(r.m),small:r.team},lineup(r)]))});
+    if(kind==='player'){
+      let l=pRows.filter(r=>r.pid===player.id&&inP(r));
+      const lab=labels(player.name,sp),also=others.length?'Also matched: '+others.map(p=>p.name).join(', ')+'. Type the full name to get a different player.':'';
+      if(!l.length)return {labels:lab,big:player.name,sub:'Not on any roster in this league '+(sc.week||sc.year?'for that week or season':'')+'. Only players on a fantasy roster that week are recorded.',note:also};
+      const ranked=low||hi;
+      l.sort(ranked?(a,b)=>low?a.pts-b.pts:b.pts-a.pts:(a,b)=>b.year-a.year||b.week-a.week);
+      if(l.length===1||ranked){const t=l[0];
+        return {labels:ranked?[low?'Lowest score':'Highest score'].concat(lab):lab,big:player.name+' · '+p2(t.pts),sub:pwhen(t)+' · '+pfor(t),...ptable(l.slice(0,25)),note:also}}
+      const best=l.slice().sort((a,b)=>b.pts-a.pts)[0],tt=sum(l,r=>r.pts);
+      return {labels:lab,big:player.name+' · '+p2(tt/l.length)+' a week',sub:l.length+' weeks on a roster · '+p2(tt)+' points in total · best '+p2(best.pts)+' ('+pwhen(best)+', '+nm(best.m)+')',
+        ...ptable(l.slice(0,40)),note:[l.length>40?'Showing the latest 40 weeks.':'',also].filter(Boolean).join(' ')};
+    }
+    let l=pRows.filter(r=>inP(r)&&(!pos||r.pos===pos)&&(kind==='bench'?r.slot===0:!low||r.slot===1));
+    l.sort((a,b)=>low&&kind!=='bench'?a.pts-b.pts:b.pts-a.pts);
+    if(!l.length)return none;const t=l[0];
+    const lab=kind==='bench'?'Biggest score left on the bench':(low?'Lowest ':'Highest ')+(pos||'player')+' score';
+    return {labels:labels(lab,sp),big:t.name+' · '+p2(t.pts),sub:pwhen(t)+' · '+pfor(t),...ptable(l.slice(0,15),true),
+      note:low&&kind!=='bench'?'Starters only.':''};
+  }
 
   if(kind==='low'||kind==='high'||kind==='lucky'||kind==='unlucky'){
     let l=scores.filter(s=>inScope(s,sc)&&mine(s));
@@ -293,17 +348,20 @@ function run(q){
 }
 function start(d){
   build(d);
-  const name=d.league&&d.league.name;if(name){$('#league').textContent=name;if(!d.demo)document.title=name+' Record Book'}
+  const name=d.league&&d.league.name&&d.league.name.trim();if(name){$('#league').textContent=name;if(!d.demo)document.title=name+' Record Book'}
   $('#demo').hidden=!d.demo;
   const ids=Object.keys(M),a=ids[0]?nm(ids[0]):'',b=ids[1]?nm(ids[1]):'';
   const ex=['lowest score in week 5','highest score this season','biggest blowout ever','closest game '+latest.year,'all-time standings','who won the league','longest winning streak','most points in a season','highest score in a loss'];
   if(a&&b)ex.push(a.split(' ')[0]+' vs '+b.split(' ')[0]);
+  if(pRows.length){const top=pRows.reduce((x,r)=>r.pts>x.pts?r:x);
+    ex.push(top.name.toLowerCase()+' week '+top.week+' '+top.year,'highest player score ever','best QB score this season','biggest bench score');
+    $('#q').placeholder='Ask anything: lowest score in week 5, or a player and a week'}
   $('#chips').innerHTML=ex.map(x=>'<button type="button" class="chip" data-q="'+esc(x)+'">'+esc(x)+'</button>').join('');
   const tiles=[['All-time lowest score','lowest score ever'],['All-time highest score','highest score ever'],['Biggest blowout','biggest blowout ever'],['Most championships','who won the league']];
   $('#tiles').innerHTML=tiles.map(([t,q])=>{const r=answer(q);const parts=r.big.split(' · ');
     return '<button type="button" class="tile" data-q="'+esc(q)+'"><span>'+esc(t)+'</span><b>'+esc(parts[1]||parts[0])+'</b><span>'+esc(parts[1]?parts[0]:r.sub)+'</span></button>'}).join('');
   const dt=d.updated?new Date(d.updated):null;
-  $('#foot').textContent=seasons.length+' seasons ('+seasons[0].year+' to '+seasons[seasons.length-1].year+'), '+games.length+' finished games'+(dt&&!isNaN(dt)?' · updated '+dt.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'');
+  $('#foot').textContent=seasons.length+' seasons ('+seasons[0].year+' to '+seasons[seasons.length-1].year+'), '+games.length+' finished games'+(pRows.length?', '+pRows.length.toLocaleString()+' player scores':'')+(dt&&!isNaN(dt)?' · updated '+dt.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'');
   document.addEventListener('click',e=>{const t=e.target.closest('[data-q]');if(t){run(t.dataset.q);window.scrollTo({top:0})}});
   $('#f').addEventListener('submit',e=>{e.preventDefault();run($('#q').value)});
   $('#q').addEventListener('input',e=>{if(!e.target.value.trim())run('')});
