@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>League Record Book</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centred column. Search on top like a search engine, answer directly under it, ranked table below. */
+:root{
+  --bg:#f2f5f1; --surface:#ffffff; --ink:#14201a; --muted:#59695f; --line:#d3dcd5;
+  --accent:#0b6b3a; --accent-ink:#ffffff; --tint:#e3efe6; --win:#0b6b3a; --loss:#b3261e;
+  --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+  --body:"Barlow","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0d1411; --surface:#151e19; --ink:#e8efe9; --muted:#98a89d; --line:#29372e;
+  --accent:#4fd08a; --accent-ink:#06140c; --tint:#1a2a21; --win:#4fd08a; --loss:#ff8a80; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0d1411; --surface:#151e19; --ink:#e8efe9; --muted:#98a89d; --line:#29372e;
+  --accent:#4fd08a; --accent-ink:#06140c; --tint:#1a2a21; --win:#4fd08a; --loss:#ff8a80; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);padding-inline:16px;padding-block:28px 56px}
+.wrap{max-width:760px;margin-inline:auto;display:flex;flex-direction:column;gap:20px}
+.top{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font:600 13px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 clamp(40px,9vw,64px)/.95 var(--display);margin:0;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+.demo{background:var(--tint);border:1px solid var(--line);border-radius:6px;padding:10px 14px;font-size:14px}
+form{display:flex;gap:8px}
+#q{flex:1;min-width:0;font:500 18px/1.2 var(--body);padding:14px 16px;border:2px solid var(--ink);border-radius:6px;background:var(--surface);color:var(--ink)}
+#q::placeholder{color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+#go{font:700 18px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;padding:0 20px;border:2px solid var(--ink);border-radius:6px;background:var(--ink);color:var(--bg)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* yard-line ruler: a tick every 10 "yards", the one decoration on the page */
+.yards{height:10px;border-top:2px solid var(--ink);background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 10%)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:14px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.tile{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile:hover{border-color:var(--accent)}
+.tile b{font:700 34px/1 var(--display);font-variant-numeric:tabular-nums}
+.tile span{font-size:14px;color:var(--muted)}
+.read{display:flex;flex-wrap:wrap;gap:6px}
+.read span{font:600 12px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:4px;background:var(--tint);color:var(--accent)}
+.answer{border-left:6px solid var(--accent);padding:4px 0 4px 16px;display:flex;flex-direction:column;gap:4px}
+.answer .big{font:700 clamp(34px,8vw,54px)/1 var(--display);text-transform:uppercase;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.answer .sub{color:var(--muted)}
+.scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+th{font:600 12px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right}
+td.k{font-weight:600}
+.w{color:var(--win);font-weight:600}.l{color:var(--loss);font-weight:600}
+.small{font-size:13px;color:var(--muted)}
+.note{font-size:14px;color:var(--muted);margin:0}
+footer{font-size:13px;color:var(--muted)}
+@media (max-width:480px){#go{padding:0 14px}.tiles{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Fantasy football record book</span>
+    <h1 id="league">League Record Book</h1>
+  </header>
+  <div class="demo" id="demo" hidden>These are made-up managers and scores so you can try the search. Your league's real history replaces them once the setup steps are done.</div>
+  <form id="f" autocomplete="off">
+    <input id="q" type="search" placeholder="Ask anything: lowest score in week 5" aria-label="Search the league history">
+    <button id="go" type="submit">Search</button>
+  </form>
+  <div class="yards" aria-hidden="true"></div>
+  <div class="chips" id="chips"></div>
+  <section id="home"><div class="tiles" id="tiles"></div></section>
+  <section id="out" aria-live="polite" hidden></section>
+  <footer id="foot"></footer>
+</div>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rx=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const p2=n=>Number(n).toFixed(2);
+let M={},scores=[],games=[],seasons=[],aliases=[],latest={year:0,week:0};
+const nm=id=>id&&M[id]?M[id].name:'Unknown';
+
+function build(d){
+  M=d.managers||{};seasons=(d.seasons||[]).slice().sort((a,b)=>a.year-b.year);
+  const teamNames={};
+  for(const s of seasons){
+    const tm={};s.teams.forEach(t=>{tm[t.teamId]=t;(teamNames[t.managerId]=teamNames[t.managerId]||new Set()).add(t.name)});
+    s.done=s.teams.some(t=>t.finalRank>0);
+    for(const g of s.games){
+      if(!g.winner||g.winner==='UNDECIDED')continue;
+      const sides=[g.home,g.away].filter(x=>x&&tm[x.teamId]);
+      if(!sides.length)continue;
+      const playoff=g.tier&&g.tier!=='NONE';
+      const base={year:s.year,week:g.week,playoff,side:playoff&&g.tier!=='WINNERS_BRACKET'};
+      const mk=(x,o)=>({...base,m:tm[x.teamId].managerId,team:tm[x.teamId].name,pts:x.pts,
+        opp:o?tm[o.teamId].managerId:null,oppPts:o?o.pts:null,res:o?(x.pts>o.pts?'W':x.pts<o.pts?'L':'T'):null});
+      if(sides.length===2){
+        const a=mk(sides[0],sides[1]),b=mk(sides[1],sides[0]);scores.push(a,b);
+        const hi=a.pts>=b.pts?a:b,lo=hi===a?b:a;
+        games.push({...base,hi,lo,margin:hi.pts-lo.pts,total:hi.pts+lo.pts});
+      }else scores.push(mk(sides[0],null));
+    }
+  }
+  for(const s of scores)if(s.year>latest.year||(s.year===latest.year&&s.week>latest.week))latest={year:s.year,week:s.week};
+  const firsts={};
+  for(const id in M){const f=M[id].name.toLowerCase().split(' ')[0];firsts[f]=(firsts[f]||0)+1}
+  for(const id in M){
+    const full=M[id].name.toLowerCase().replace(/\.$/,''),f=full.split(' ')[0];
+    aliases.push({id,re:new RegExp('\\b'+rx(full)+'(?![a-z])')});
+    if(firsts[f]===1&&f.length>1)aliases.push({id,re:new RegExp('\\b'+rx(f)+'\\b')});
+    (teamNames[id]||[]).forEach(t=>{if(t.length>3)aliases.push({id,re:new RegExp(rx(t.toLowerCase()))})});
+  }
+}
+
+function parse(raw){
+  const q=' '+raw.toLowerCase().replace(/[?!,]/g,' ')+' ',has=r=>r.test(q);
+  const sc={year:null,week:null,ms:[],phase:null};
+  const y=q.match(/\b(20\d\d)\b/);if(y)sc.year=+y[1];
+  else if(has(/this (season|year)|current season|so far/))sc.year=latest.year;
+  else if(has(/last (season|year)/))sc.year=latest.year-1;
+  const w=q.match(/\b(?:week|wk|round)\s*(\d{1,2})\b/);if(w)sc.week=+w[1];
+  else if(has(/(this|last|latest) week|most recent/)){sc.week=latest.week;sc.year=sc.year||latest.year}
+  if(has(/playoff|final/))sc.phase='playoffs';else if(has(/regular season/))sc.phase='regular';
+  for(const a of aliases)if(a.re.test(q)&&!sc.ms.includes(a.id))sc.ms.push(a.id);
+  const low=has(/least|lowest|worst|fewest|\blow\b|bottom|minimum|smallest|\bdud|\bbad|last place/);
+  let kind=null;
+  if(sc.ms.length>=2)kind='h2h';
+  else if(has(/champ|title|trophy|premiership|who won|won the league|winners?\b/)&&!has(/streak/))kind='champs';
+  else if(has(/blowout|biggest (win|loss|margin)|largest margin|smash|thrash|flogging/))kind='blowout';
+  else if(has(/closest|narrowest|tightest|nail.?biter|smallest margin/))kind='closest';
+  else if(has(/streak|in a row/))kind=has(/los/)?'lstreak':'wstreak';
+  else if(has(/unluck|in a loss|and lost|lost with|losing score/))kind='unlucky';
+  else if(has(/luck|in a win|and won|won with|winning score/))kind='lucky';
+  else if(has(/shootout|combined|highest.scoring (game|matchup)/))kind='shootout';
+  else if(has(/(in|for|over) a (single |whole |full )?season|season totals?|per season/))kind='seasonpts';
+  else if(has(/average|\bavg\b|per game|\bppg\b/))kind='avg';
+  else if(has(/total points|points for|career points|all.?time points/))kind='totalpts';
+  else if(has(/standing|record\b|\bwins?\b|loss(es)?\b|ladder|\btable\b|rank|win (percentage|%|rate)/)&&!has(/score/))kind='standings';
+  else if(low)kind='low';
+  else if(has(/most|highest|best|\btop\b|biggest|record|point|score/))kind='high';
+  else if(sc.ms.length===1)kind='profile';
+  return {kind,sc,low};
+}
+
+function inScope(x,sc,opt){
+  opt=opt||{};
+  if(x.side)return false; // consolation games are left out: abandoned lineups skew every record
+  if(sc.year&&x.year!==sc.year)return false;
+  if(sc.week&&x.week!==sc.week)return false;
+  if(sc.phase==='playoffs'&&!x.playoff)return false;
+  if((sc.phase==='regular'||(opt.regular&&!sc.phase))&&x.playoff)return false;
+  return true;
+}
+const when=x=>'Week '+x.week+', '+x.year+(x.playoff?' playoffs':'');
+const vs=s=>s.opp?(s.res==='W'?'beat ':s.res==='L'?'lost to ':'tied ')+nm(s.opp)+' '+p2(s.pts)+'–'+p2(s.oppPts):'bye week';
+const res=r=>r?'<span class="'+(r==='W'?'w':r==='L'?'l':'')+'">'+r+'</span>':'';
+function labels(kindLabel,sc,extra){
+  const a=[kindLabel];sc.ms.forEach(m=>a.push(nm(m)));
+  if(sc.week)a.push('Week '+sc.week);a.push(sc.year?String(sc.year):'All time');
+  if(sc.phase)a.push(sc.phase==='playoffs'?'Playoffs only':'Regular season');
+  return a.concat(extra||[]);
+}
+function scoreTable(list){
+  return {cols:['#','Manager','Points:n','When','Result'],rows:list.map((s,i)=>[i+1,{k:nm(s.m),small:s.team},p2(s.pts),when(s),
+    {html:s.opp?res(s.res)+' vs '+esc(nm(s.opp))+' ('+p2(s.oppPts)+')':'Bye'}])};
+}
+function gameTable(list){
+  return {cols:['#','Winner','Score:n','Loser','Margin:n','When'],rows:list.map((g,i)=>[i+1,{k:nm(g.hi.m)},p2(g.hi.pts)+'–'+p2(g.lo.pts),nm(g.lo.m),p2(g.margin),when(g)])};
+}
+function group(list,key){const o={};list.forEach(x=>{(o[key(x)]=o[key(x)]||[]).push(x)});return o}
+const sum=(l,f)=>l.reduce((a,x)=>a+f(x),0);
+
+function answer(raw){
+  const {kind,sc,low}=parse(raw);
+  const mine=s=>!sc.ms.length||sc.ms.includes(s.m);
+  const none={labels:['No results'],big:'Nothing found',sub:'No finished games match that. Try a different week or season.'};
+  if(!kind)return {labels:["Didn't catch that"],big:'Try another way',sub:'Ask about scores, records, blowouts, streaks, champions, or type two managers to compare them.'};
+
+  if(kind==='low'||kind==='high'||kind==='lucky'||kind==='unlucky'){
+    let l=scores.filter(s=>inScope(s,sc)&&mine(s));
+    if(kind==='lucky')l=l.filter(s=>s.res==='W');if(kind==='unlucky')l=l.filter(s=>s.res==='L');
+    const asc=kind==='low'||kind==='lucky';l.sort((a,b)=>asc?a.pts-b.pts:b.pts-a.pts);
+    if(!l.length)return none;const t=l[0];
+    const lab={low:'Lowest score',high:'Highest score',lucky:'Lowest score in a win',unlucky:'Highest score in a loss'}[kind];
+    return {labels:labels(lab,sc),big:nm(t.m)+' · '+p2(t.pts),sub:when(t)+' · '+vs(t)+' · '+t.team,...scoreTable(l.slice(0,15)),
+      note:l.length+' scores searched. Consolation-bracket games are left out.'};
+  }
+  if(kind==='blowout'||kind==='closest'||kind==='shootout'){
+    let l=games.filter(g=>inScope(g,sc)&&(!sc.ms.length||sc.ms.includes(g.hi.m)||sc.ms.includes(g.lo.m)));
+    l.sort(kind==='blowout'?(a,b)=>b.margin-a.margin:kind==='closest'?(a,b)=>a.margin-b.margin:(a,b)=>b.total-a.total);
+    if(!l.length)return none;const g=l[0];
+    const lab={blowout:'Biggest blowout',closest:'Closest game',shootout:'Highest combined score'}[kind];
+    return {labels:labels(lab,sc),big:kind==='shootout'?p2(g.total)+' combined':nm(g.hi.m)+' by '+p2(g.margin),
+      sub:nm(g.hi.m)+' '+p2(g.hi.pts)+' beat '+nm(g.lo.m)+' '+p2(g.lo.pts)+' · '+when(g),...gameTable(l.slice(0,15))};
+  }
+  if(kind==='standings'||kind==='totalpts'||kind==='avg'){
+    const l=scores.filter(s=>inScope(s,sc,{regular:kind==='standings'})&&mine(s));
+    const by=group(l,s=>s.m);
+    let rows=Object.keys(by).map(m=>{const a=by[m],w=a.filter(s=>s.res==='W').length,ls=a.filter(s=>s.res==='L').length,t=a.filter(s=>s.res==='T').length;
+      const pf=sum(a,s=>s.pts);return {m,w,l:ls,t,gp:a.length,pct:(w+ls+t)?(w+t/2)/(w+ls+t):0,pf,pa:sum(a,s=>s.oppPts||0),avg:pf/a.length}});
+    if(!rows.length)return none;
+    const f=kind==='standings'?r=>r.pct*1e6+r.pf:kind==='avg'?r=>r.avg:r=>r.pf;
+    rows.sort((a,b)=>low?f(a)-f(b):f(b)-f(a));const t=rows[0];
+    const lab=(kind==='standings'?(low?'Worst record':'Best record'):kind==='avg'?(low?'Lowest average':'Highest average'):(low?'Fewest total points':'Most total points'));
+    return {labels:labels(lab,sc,kind==='standings'&&!sc.phase?['Regular season']:[]),
+      big:nm(t.m)+' · '+(kind==='standings'?t.w+'–'+t.l+(t.t?'–'+t.t:''):kind==='avg'?p2(t.avg)+' a game':p2(t.pf)),
+      sub:kind==='standings'?(t.pct*100).toFixed(1)+'% of games won, '+p2(t.pf)+' points scored':t.gp+' games, '+t.w+'–'+t.l+' record',
+      cols:['#','Manager','W:n','L:n','Win %:n','Points:n','Against:n','Avg:n'],
+      rows:rows.map((r,i)=>[i+1,{k:nm(r.m)},r.w,r.l,(r.pct*100).toFixed(1),p2(r.pf),p2(r.pa),p2(r.avg)])};
+  }
+  if(kind==='seasonpts'){
+    const l=scores.filter(s=>inScope(s,{...sc,week:null},{regular:true})&&mine(s));
+    const by=group(l,s=>s.m+'|'+s.year);const full={};seasons.forEach(s=>full[s.year]=s.done);
+    let rows=Object.values(by).map(a=>({m:a[0].m,year:a[0].year,team:a[0].team,gp:a.length,pf:sum(a,s=>s.pts),w:a.filter(s=>s.res==='W').length,l:a.filter(s=>s.res==='L').length}));
+    if(!sc.year)rows=rows.filter(r=>full[r.year]); // a season in progress would always look like the lowest
+    if(!rows.length)return none;
+    rows.sort((a,b)=>low?a.pf-b.pf:b.pf-a.pf);const t=rows[0];
+    return {labels:labels(low?'Fewest points in a season':'Most points in a season',{...sc,week:null},['Regular season']),
+      big:nm(t.m)+' · '+p2(t.pf),sub:t.year+' · '+t.team+' · '+t.w+'–'+t.l+' · '+p2(t.pf/t.gp)+' a game',
+      cols:['#','Manager','Season','Points:n','Avg:n','Record'],rows:rows.slice(0,15).map((r,i)=>[i+1,{k:nm(r.m),small:r.team},r.year,p2(r.pf),p2(r.pf/r.gp),r.w+'–'+r.l]),
+      note:sc.year?'':'Finished seasons only.'};
+  }
+  if(kind==='wstreak'||kind==='lstreak'){
+    const want=kind==='wstreak'?'W':'L',out=[];
+    const by=group(scores.filter(s=>!s.side&&s.res&&mine(s)&&(!sc.year||s.year===sc.year)),s=>s.m);
+    for(const m in by){const a=by[m].sort((x,y)=>x.year-y.year||x.week-y.week);let run=[];
+      const flush=()=>{if(run.length)out.push({m,n:run.length,from:run[0],to:run[run.length-1]});run=[]};
+      a.forEach(s=>{if(s.res===want)run.push(s);else flush()});flush();}
+    out.sort((a,b)=>b.n-a.n);if(!out.length)return none;const t=out[0];
+    return {labels:labels(want==='W'?'Longest winning streak':'Longest losing streak',{...sc,week:null,phase:null}),
+      big:nm(t.m)+' · '+t.n+' in a row',sub:when(t.from)+' to '+when(t.to),
+      cols:['#','Manager','Games:n','From','To'],rows:out.slice(0,15).map((r,i)=>[i+1,{k:nm(r.m)},r.n,when(r.from),when(r.to)])};
+  }
+  if(kind==='champs'){
+    let rows=seasons.filter(s=>s.done&&(!sc.year||s.year===sc.year)).map(s=>{
+      const r=s.teams.slice().sort((a,b)=>a.finalRank-b.finalRank);return {year:s.year,c:r[0],ru:r[1],last:r[r.length-1]}}).reverse();
+    if(sc.ms.length)rows=rows.filter(r=>sc.ms.includes(r.c.managerId));
+    const lab=labels('Champions',{...sc,week:null,phase:null});
+    if(!rows.length)return {labels:lab,big:sc.ms.length?nm(sc.ms[0])+' · 0 titles':'No champion yet',sub:sc.ms.length?'Still waiting on the first one.':'That season has not finished.'};
+    const cnt={};rows.forEach(r=>cnt[r.c.managerId]=(cnt[r.c.managerId]||0)+1);
+    const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]),best=top.filter(m=>cnt[m]===cnt[top[0]]);
+    const one=rows.length===1;
+    return {labels:lab,big:one?nm(rows[0].c.managerId):best.map(nm).join(' & ')+' · '+cnt[top[0]]+(cnt[top[0]]===1?' title':' titles'),
+      sub:one?rows[0].year+' champion with '+rows[0].c.name+', beat '+nm(rows[0].ru.managerId)+' to the title':(best.length>1?'Tied for the most championships':'Most championships in league history'),
+      cols:['Season','Champion','Runner-up','Last place'],rows:rows.map(r=>[r.year,{k:nm(r.c.managerId),small:r.c.name},nm(r.ru.managerId),nm(r.last.managerId)])};
+  }
+  if(kind==='h2h'){
+    const [a,b]=sc.ms;const l=scores.filter(s=>inScope(s,sc)&&s.m===a&&s.opp===b).sort((x,y)=>y.year-x.year||y.week-x.week);
+    const lab=labels('Head to head',sc);if(!l.length)return {labels:lab,big:'Never played',sub:nm(a)+' and '+nm(b)+' have no finished games against each other in that range.'};
+    const w=l.filter(s=>s.res==='W').length,ls=l.filter(s=>s.res==='L').length;
+    const lead=w===ls?'Level at '+w+'–'+ls:(w>ls?nm(a):nm(b))+' leads '+Math.max(w,ls)+'–'+Math.min(w,ls);
+    return {labels:lab,big:lead,sub:l.length+' games · '+nm(a)+' averages '+p2(sum(l,s=>s.pts)/l.length)+', '+nm(b)+' averages '+p2(sum(l,s=>s.oppPts)/l.length),
+      cols:['When',nm(a)+':n',nm(b)+':n','Winner'],rows:l.map(s=>[when(s),p2(s.pts),p2(s.oppPts),{k:s.res==='W'?nm(a):s.res==='L'?nm(b):'Tie'}])};
+  }
+  if(kind==='profile'){
+    const m=sc.ms[0],l=scores.filter(s=>!s.side&&s.m===m),reg=l.filter(s=>!s.playoff&&s.res);
+    if(!l.length)return none;
+    const w=reg.filter(s=>s.res==='W').length,ls=reg.filter(s=>s.res==='L').length,srt=l.slice().sort((a,b)=>a.pts-b.pts);
+    const rows=seasons.map(s=>{const t=s.teams.find(t=>t.managerId===m);return t&&[s.year,{k:t.name},t.wins+'–'+t.losses,p2(t.pf),t.finalRank?(t.finalRank===1?'Champion':'#'+t.finalRank):'In progress']}).filter(Boolean).reverse();
+    const titles=seasons.filter(s=>s.teams.some(t=>t.managerId===m&&t.finalRank===1)).length;
+    return {labels:['Manager','All time'],big:nm(m)+' · '+w+'–'+ls,
+      sub:titles+(titles===1?' title':' titles')+' · averages '+p2(sum(l,s=>s.pts)/l.length)+' · best '+p2(srt[srt.length-1].pts)+' ('+when(srt[srt.length-1])+') · worst '+p2(srt[0].pts)+' ('+when(srt[0])+')',
+      cols:['Season','Team','Record','Points:n','Finish'],rows:rows};
+  }
+}
+
+function render(r){
+  let h='<div style="display:flex;flex-direction:column;gap:16px"><div class="read">'+r.labels.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div>'+
+    '<div class="answer"><div class="big">'+esc(r.big)+'</div><div class="sub">'+esc(r.sub)+'</div></div>';
+  if(r.rows&&r.rows.length){
+    const cols=r.cols.map(c=>({t:c.replace(/:n$/,''),n:/:n$/.test(c)}));
+    h+='<div class="scroll"><table><thead><tr>'+cols.map(c=>'<th'+(c.n?' class="n"':'')+'>'+esc(c.t)+'</th>').join('')+'</tr></thead><tbody>'+
+      r.rows.map(row=>'<tr>'+row.map((c,i)=>{const cl=cols[i].n?'n':'';
+        if(c&&c.html)return '<td>'+c.html+'</td>';
+        if(c&&c.k!==undefined)return '<td class="k '+cl+'">'+esc(c.k)+(c.small?' <span class="small">'+esc(c.small)+'</span>':'')+'</td>';
+        return '<td class="'+cl+'">'+esc(c)+'</td>'}).join('')+'</tr>').join('')+'</tbody></table></div>';
+  }
+  if(r.note)h+='<p class="note">'+esc(r.note)+'</p>';
+  return h+'</div>';
+}
+function run(q){
+  q=q.trim();$('#q').value=q;
+  if(!q){$('#out').hidden=true;$('#home').hidden=false;return}
+  $('#out').innerHTML=render(answer(q));$('#out').hidden=false;$('#home').hidden=true;
+}
+function start(d){
+  build(d);
+  const name=d.league&&d.league.name;if(name){$('#league').textContent=name;if(!d.demo)document.title=name+' Record Book'}
+  $('#demo').hidden=!d.demo;
+  const ids=Object.keys(M),a=ids[0]?nm(ids[0]):'',b=ids[1]?nm(ids[1]):'';
+  const ex=['lowest score in week 5','highest score this season','biggest blowout ever','closest game '+latest.year,'all-time standings','who won the league','longest winning streak','most points in a season','highest score in a loss'];
+  if(a&&b)ex.push(a.split(' ')[0]+' vs '+b.split(' ')[0]);
+  $('#chips').innerHTML=ex.map(x=>'<button type="button" class="chip" data-q="'+esc(x)+'">'+esc(x)+'</button>').join('');
+  const tiles=[['All-time lowest score','lowest score ever'],['All-time highest score','highest score ever'],['Biggest blowout','biggest blowout ever'],['Most championships','who won the league']];
+  $('#tiles').innerHTML=tiles.map(([t,q])=>{const r=answer(q);const parts=r.big.split(' · ');
+    return '<button type="button" class="tile" data-q="'+esc(q)+'"><span>'+esc(t)+'</span><b>'+esc(parts[1]||parts[0])+'</b><span>'+esc(parts[1]?parts[0]:r.sub)+'</span></button>'}).join('');
+  const dt=d.updated?new Date(d.updated):null;
+  $('#foot').textContent=seasons.length+' seasons ('+seasons[0].year+' to '+seasons[seasons.length-1].year+'), '+games.length+' finished games'+(dt&&!isNaN(dt)?' · updated '+dt.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'');
+  document.addEventListener('click',e=>{const t=e.target.closest('[data-q]');if(t){run(t.dataset.q);window.scrollTo({top:0})}});
+  $('#f').addEventListener('submit',e=>{e.preventDefault();run($('#q').value)});
+  $('#q').addEventListener('input',e=>{if(!e.target.value.trim())run('')});
+}
+fetch('data.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(start).catch(()=>{
+  $('#home').innerHTML='<p class="note">The league data file (data.json) could not be loaded. Check that it sits next to this page.</p>'});
+})();
+</script>
+</body>
+</html>
