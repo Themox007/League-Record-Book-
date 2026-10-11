@@ -326,7 +326,7 @@ function answer(raw){
       cols:['Season','Team','Record','Points:n','Finish'],rows:rows};
   }
 }
-const realAnswer=answer;answer=function(raw){if(/(biggest|largest|longest|best) (dick|cock|penis|schlong|package)/.test(raw.toLowerCase()))return {labels:['Official league record','All time','Undisputed'],big:'Luke Moxham',sub:'Measured, verified and ratified by the league office and various female sources. Only known discoverer of the clitorous.'};return realAnswer(raw)};  
+const realAnswer=answer;answer=function(raw){if(/(biggest|largest|longest|best) (dick|cock|penis|schlong|package)/.test(raw.toLowerCase()))return {labels:['Official league record','All time','Undisputed'],big:'Luke Moxham',sub:'Measured & Verified by the league office and various female sources. He is also the only known discoverer of the clitorous.'};return realAnswer(raw)};  
 function render(r){
   let h='<div style="display:flex;flex-direction:column;gap:16px"><div class="read">'+r.labels.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div>'+
     '<div class="answer"><div class="big">'+esc(r.big)+'</div><div class="sub">'+esc(r.sub)+'</div></div>';
