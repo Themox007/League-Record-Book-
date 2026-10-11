@@ -1,0 +1,32 @@
+name: Update league data
+
+on:
+  schedule:
+    # Tuesday and Wednesday at 12:00 UTC: after Monday Night Football,
+    # then again to pick up ESPN's stat corrections.
+    - cron: "0 12 * * 2,3"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pull scores from ESPN
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          SWID: ${{ secrets.SWID }}
+        run: python fetch_data.py
+      - name: Save the new data
+        run: |
+          git config user.name "league-bot"
+          git config user.email "league-bot@users.noreply.github.com"
+          git add data.json
+          git diff --cached --quiet || git commit -m "Update league data"
+          git push
