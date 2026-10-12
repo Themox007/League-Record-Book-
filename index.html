@@ -212,7 +212,7 @@ const sum=(l,f)=>l.reduce((a,x)=>a+f(x),0);
 
 // Joke answers. Add more lines here: [words to look for, the answer, the line underneath]
 const JOKES=[
-  [/(biggest|largest|longest|best) (dick|cock|penis|schlong|package)/,'Luke','Measured, verified and ratified by the league office. It was not close.'],
+  [/(dick|cock|penis|schlong|package)/,'Luke','Measured & verified by the league office. Only discoverer of the clitoris'],
 ];
 function answer(raw){
   for(const [re,big,sub] of JOKES)if(re.test(raw.toLowerCase()))return {labels:['Official league record','All time','Undisputed'],big,sub};
