@@ -210,16 +210,14 @@ function gameTable(list){
 function group(list,key){const o={};list.forEach(x=>{(o[key(x)]=o[key(x)]||[]).push(x)});return o}
 const sum=(l,f)=>l.reduce((a,x)=>a+f(x),0);
 
-// Joke answers. Add more lines here: [words to look for, the answer, the line underneath]
+// Joke answers. Add more lines here: [words to look for, the answer, the line underneath, the tags]
+// The first one that matches wins, so keep the more specific ones higher up.
 const JOKES=[
-  [/(dick|cock|penis|schlong|package)/,'Luke','Measured & verified by the league office. Only discoverer of the clitoris'],
+  [/\b(smallest|tiny|small|littlest)\b.*\b(dick|cock|penis|schlong|package)/,'Lachlan','Measured by the league office. They needed tweezers to wank.',['Official league record','Smallest all time','Confirmed by microscope','1.1 Inches']],
+  [/(dick|cock|penis|schlong|package)/,'Luke','Measured & verified by the league office. Only discoverer of the clitoris',['Official league record','Biggest All time','Undisputed','9.4 Inches']],
 ];
 function answer(raw){
-  for(const [re,big,sub] of JOKES)if(re.test(raw.toLowerCase()))return {labels:['Official league record','Biggest All time','Undisputed','9.4 Inches'],big,sub};
-  const {kind,sc,low,hi,pos,player,others}=parse(raw);
-  const mine=s=>!sc.ms.length||sc.ms.includes(s.m);
-  const none={labels:['No results'],big:'Nothing found',sub:'No finished games match that. Try a different week or season.'};
-  if(!kind)return {labels:["Didn't catch that"],big:'Try another way',sub:'Ask about scores, records, blowouts, streaks, champions, a player, or type two managers to compare them.'};
+  for(const [re,big,sub,labels] of JOKES)if(re.test(raw.toLowerCase()))return {labels,big,sub};
 
   if(kind==='lineup'){
     if(!pRows.length)return {labels:['Lineup'],big:'No player scores yet',sub:'Lineups load the next time the weekly update runs.'};
