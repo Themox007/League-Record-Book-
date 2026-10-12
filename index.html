@@ -58,9 +58,14 @@ td.k{font-weight:600}
 .w{color:var(--win);font-weight:600}.l{color:var(--loss);font-weight:600}
 .small{font-size:13px;color:var(--muted)}
 .note{font-size:14px;color:var(--muted);margin:0}
-footer{font-size:13px;color:var(--muted)}
+footer{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--tint);border:1px solid var(--line);border-radius:6px;padding:10px 14px;font-size:15px}
+.who b{font-weight:600}
+.who select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)}
+.who button,.linkish{background:none;border:0;padding:0;text-decoration:underline;color:var(--muted);font-size:14px}
 @media (max-width:480px){#go{padding:0 14px}.tiles{grid-template-columns:1fr}}
 </style>
+<script data-goatcounter="https://themox007.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -69,6 +74,11 @@ footer{font-size:13px;color:var(--muted)}
     <h1 id="league">League Record Book</h1>
   </header>
   <div class="demo" id="demo" hidden>These are made-up managers and scores so you can try the search. Your league's real history replaces them once the setup steps are done.</div>
+  <div class="who" id="who" hidden>
+    <label for="whoPick"><b>Who's searching?</b></label>
+    <select id="whoPick"><option value="">Pick your name</option></select>
+    <button type="button" id="whoSkip">Skip</button>
+  </div>
   <form id="f" autocomplete="off">
     <input id="q" type="search" placeholder="Ask anything: lowest score in week 5" aria-label="Search the league history">
     <button id="go" type="submit">Search</button>
@@ -77,7 +87,7 @@ footer{font-size:13px;color:var(--muted)}
   <div class="chips" id="chips"></div>
   <section id="home"><div class="tiles" id="tiles"></div></section>
   <section id="out" aria-live="polite" hidden></section>
-  <footer id="foot"></footer>
+  <footer><span id="foot"></span><span id="whoNow"></span></footer>
 </div>
 <script>
 (function(){
@@ -421,9 +431,29 @@ function render(r){
   if(r.note)h+='<p class="note">'+esc(r.note)+'</p>';
   return h+'</div>';
 }
+// Visit and search tracking (GoatCounter). Names come from the "Who's searching?" picker.
+let who='';
+try{who=localStorage.getItem('who')||''}catch(e){}
+function track(path,title){
+  let tries=0;
+  (function send(){
+    if(window.goatcounter&&window.goatcounter.count){try{window.goatcounter.count({path:path.slice(0,200),title:title||path,event:true})}catch(e){}}
+    else if(tries++<20)setTimeout(send,500);
+  })();
+}
+function showWho(){
+  $('#who').hidden=!!who;
+  $('#whoNow').innerHTML=who&&who!=='skip'?'Searching as '+esc(who)+' · <button type="button" class="linkish" id="whoChange">not you?</button>':'';
+}
+function setWho(v){
+  who=v;try{localStorage.setItem('who',v)}catch(e){}
+  if(v&&v!=='skip')track('visit: '+v);
+  showWho();
+}
 function run(q){
   q=q.trim();$('#q').value=q;
   if(!q){$('#out').hidden=true;$('#home').hidden=false;return}
+  track((who&&who!=='skip'?who:'Someone')+' searched: '+q.toLowerCase());
   $('#out').innerHTML=render(answer(q));$('#out').hidden=false;$('#home').hidden=true;
 }
 function start(d){
@@ -443,6 +473,13 @@ function start(d){
     return '<button type="button" class="tile" data-q="'+esc(q)+'"><span>'+esc(t)+'</span><b>'+esc(parts[1]||parts[0])+'</b><span>'+esc(parts[1]?parts[0]:r.sub)+'</span></button>'}).join('');
   const dt=d.updated?new Date(d.updated):null;
   $('#foot').textContent=seasons.length+' seasons ('+seasons[0].year+' to '+seasons[seasons.length-1].year+'), '+games.length+' finished games'+(pRows.length?', '+pRows.length.toLocaleString()+' player scores':'')+(dt&&!isNaN(dt)?' · updated '+dt.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'');
+  const cur=seasons[seasons.length-1],names=[...new Set(cur.teams.map(t=>nm(t.managerId)))].sort();
+  $('#whoPick').innerHTML='<option value="">Pick your name</option>'+names.map(n=>'<option>'+esc(n)+'</option>').join('');
+  $('#whoPick').addEventListener('change',e=>{if(e.target.value)setWho(e.target.value)});
+  $('#whoSkip').addEventListener('click',()=>setWho('skip'));
+  document.addEventListener('click',e=>{if(e.target.id==='whoChange'){who='';try{localStorage.removeItem('who')}catch(x){}showWho();$('#whoPick').value=''}});
+  if(who&&who!=='skip')track('visit: '+who);
+  showWho();
   document.addEventListener('click',e=>{const t=e.target.closest('[data-q]');if(t){run(t.dataset.q);window.scrollTo({top:0})}});
   $('#f').addEventListener('submit',e=>{e.preventDefault();run($('#q').value)});
   $('#q').addEventListener('input',e=>{if(!e.target.value.trim())run('')});
