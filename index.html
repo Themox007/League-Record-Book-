@@ -214,8 +214,9 @@ const sum=(l,f)=>l.reduce((a,x)=>a+f(x),0);
 const JOKES=[
   [/(dick|cock|penis|schlong|package)/,'Luke','Measured & verified by the league office. Only discoverer of the clitoris'],
 ];
+const [/(smallest|tiny|little)(dick|cock|penis|schlong|package/, 'Lachlan','Teenie & Tiny. Jerks off with tweezers'],
 function answer(raw){
-  for(const [re,big,sub] of JOKES)if(re.test(raw.toLowerCase()))return {labels:['Official league record','All time','Undisputed'],big,sub};
+  for(const [re,big,sub] of JOKES)if(re.test(raw.toLowerCase()))return {labels:['Official league record','Biggest All time','Undisputed','9.4 Inches'],big,sub};
   const {kind,sc,low,hi,pos,player,others}=parse(raw);
   const mine=s=>!sc.ms.length||sc.ms.includes(s.m);
   const none={labels:['No results'],big:'Nothing found',sub:'No finished games match that. Try a different week or season.'};
