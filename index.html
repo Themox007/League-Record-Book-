@@ -145,9 +145,10 @@ function parse(raw){
   if(has(/playoff|final/))sc.phase='playoffs';else if(has(/regular season/))sc.phase='regular';
   // players first, so a team named after a player doesn't hijack the search
   const qn=' '+norm(raw)+' ';let player=null,others=[];
-  const fullHits=plist.filter(p=>qn.includes(' '+p.norm+' ')).sort((a,b)=>b.norm.length-a.norm.length||b.total-a.total);
+  const wantLineup=has(/line.?up|roster|squad/);
+  const fullHits=wantLineup?[]:plist.filter(p=>qn.includes(' '+p.norm+' ')).sort((a,b)=>b.norm.length-a.norm.length||b.total-a.total);
   if(fullHits.length){player=fullHits[0];others=fullHits.slice(1).filter(p=>p.norm===player.norm)}
-  else for(const t of qn.trim().split(' ')){
+  else if(!wantLineup)for(const t of qn.trim().split(' ')){
     if(t.length<4||STOP.has(t)||!byLast[t]||aliases.some(a=>a.first===t))continue;
     player=byLast[t][0];others=byLast[t].slice(1,4);break}
   let qm=q;if(player)player.norm.split(' ').forEach(t=>{qm=qm.replace(new RegExp('\\b'+rx(t)+'\\b','g'),' ')});
@@ -156,7 +157,8 @@ function parse(raw){
   const hi=has(/most|highest|best|\btop\b|biggest|record|maximum/);
   const pos=has(/\bqbs?\b|quarterback/)?'QB':has(/\brbs?\b|running ?back/)?'RB':has(/\bwrs?\b|receiver/)?'WR':has(/\btes?\b|tight ?end/)?'TE':has(/kicker/)?'K':has(/d\/?st\b|defen[cs]e/)?'D/ST':null;
   let kind=null;
-  if(player)kind='player';
+  if(wantLineup)kind='lineup';
+  else if(player)kind='player';
   else if(has(/bench/))kind='bench';
   else if(pos||has(/\bplayers?\b/))kind='pboard';
   else if(sc.ms.length>=2)kind='h2h';
@@ -208,12 +210,30 @@ function gameTable(list){
 function group(list,key){const o={};list.forEach(x=>{(o[key(x)]=o[key(x)]||[]).push(x)});return o}
 const sum=(l,f)=>l.reduce((a,x)=>a+f(x),0);
 
+// Joke answers. Add more lines here: [words to look for, the answer, the line underneath]
+const JOKES=[
+  [/(biggest|largest|longest|best) (dick|cock|penis|schlong|package)/,'Luke','Measured, verified and ratified by the league office. It was not close.'],
+];
 function answer(raw){
+  for(const [re,big,sub] of JOKES)if(re.test(raw.toLowerCase()))return {labels:['Official league record','All time','Undisputed'],big,sub};
   const {kind,sc,low,hi,pos,player,others}=parse(raw);
   const mine=s=>!sc.ms.length||sc.ms.includes(s.m);
   const none={labels:['No results'],big:'Nothing found',sub:'No finished games match that. Try a different week or season.'};
   if(!kind)return {labels:["Didn't catch that"],big:'Try another way',sub:'Ask about scores, records, blowouts, streaks, champions, a player, or type two managers to compare them.'};
 
+  if(kind==='lineup'){
+    if(!pRows.length)return {labels:['Lineup'],big:'No player scores yet',sub:'Lineups load the next time the weekly update runs.'};
+    if(!sc.ms.length)return {labels:['Lineup'],big:'Whose lineup?',sub:'Add a manager and a week, like "'+nm(Object.keys(M)[0]).split(' ')[0].toLowerCase()+' lineup week 4 '+latest.year+'".'};
+    const m=sc.ms[0],yr=sc.year||latest.year,all=pRows.filter(r=>r.m===m&&r.year===yr);
+    const wk=sc.week||Math.max(0,...all.map(r=>r.week)),l=all.filter(r=>r.week===wk),lab=['Lineup',nm(m),'Week '+wk,String(yr)];
+    if(!l.length)return {labels:lab,big:'No lineup found',sub:nm(m)+' has no recorded lineup for week '+wk+', '+yr+'. A week is added once its games are final.'};
+    const ord=['QB','RB','WR','TE','K','D/ST'],grp=r=>r.slot===1?0:r.slot===0?1:2;
+    l.sort((a,b)=>grp(a)-grp(b)||(a.slot===1?ord.indexOf(a.pos)-ord.indexOf(b.pos):0)||b.pts-a.pts);
+    const st=l.filter(r=>r.slot===1),bn=l.filter(r=>r.slot===0),g=scores.find(s=>s.m===m&&s.year===yr&&s.week===wk),top=bn.slice().sort((a,b)=>b.pts-a.pts)[0];
+    return {labels:lab,big:nm(m)+' · '+p2(sum(st,r=>r.pts)),sub:[l[0].team,g?vs(g):null,top?'best on the bench: '+top.name+' '+p2(top.pts):null].filter(Boolean).join(' · '),
+      cols:['Lineup','Player','Pos','Points:n'],rows:l.map(r=>[lineup(r),{k:r.name},r.pos,p2(r.pts)]),
+      note:'Starters are grouped by position, so the flex spot is not labelled. Bench total: '+p2(sum(bn,r=>r.pts))+'.'};
+  }
   if(kind==='player'||kind==='bench'||kind==='pboard'){
     if(!pRows.length)return {labels:['Players'],big:'No player scores yet',sub:'Player scores load the next time the weekly update runs.'};
     const sp={...sc,phase:null},inP=r=>(!sc.year||r.year===sc.year)&&(!sc.week||r.week===sc.week)&&mine(r);
@@ -326,7 +346,7 @@ function answer(raw){
       cols:['Season','Team','Record','Points:n','Finish'],rows:rows};
   }
 }
-const realAnswer=answer;answer=function(raw){if(/(dick|cock|penis|schlong|package)/.test(raw.toLowerCase()))return {labels:['Official league record','All time','Undisputed', '9.7 Inches'],big:'Luke Moxham',sub:'Measured & verified by the league office and various female sources. He is also the only known discoverer of the clitorous.'};return realAnswer(raw)};  
+
 function render(r){
   let h='<div style="display:flex;flex-direction:column;gap:16px"><div class="read">'+r.labels.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div>'+
     '<div class="answer"><div class="big">'+esc(r.big)+'</div><div class="sub">'+esc(r.sub)+'</div></div>';
@@ -354,6 +374,7 @@ function start(d){
   const ex=['lowest score in week 5','highest score this season','biggest blowout ever','closest game '+latest.year,'all-time standings','who won the league','longest winning streak','most points in a season','highest score in a loss'];
   if(a&&b)ex.push(a.split(' ')[0]+' vs '+b.split(' ')[0]);
   if(pRows.length){const top=pRows.reduce((x,r)=>r.pts>x.pts?r:x);
+    if(a)ex.push(a.split(' ')[0].toLowerCase()+' lineup week '+latest.week+' '+latest.year);
     ex.push(top.name.toLowerCase()+' week '+top.week+' '+top.year,'highest player score ever','best QB score this season','biggest bench score');
     $('#q').placeholder='Ask anything: lowest score in week 5, or a player and a week'}
   $('#chips').innerHTML=ex.map(x=>'<button type="button" class="chip" data-q="'+esc(x)+'">'+esc(x)+'</button>').join('');
