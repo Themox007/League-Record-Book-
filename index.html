@@ -277,6 +277,12 @@ const JOKES=[
 ];
 function answer(raw){
   for(const [re,big,sub,labels] of JOKES)if(re.test(raw.toLowerCase()))return {labels,big,sub};
+  const {kind,sc,low,hi,pos,player,others}=parse(raw);
+  const mine=s=>!sc.ms.length||sc.ms.includes(s.m);
+  const none={labels:['No results'],big:'Nothing found',sub:'No finished games match that. Try a different week or season.'};
+  if(!kind)return {labels:["Didn't catch that"],big:'Try another way',sub:'Ask about scores, records, blowouts, streaks, champions, a player, or type two managers to compare them.'};
+function answer(raw){
+  for(const [re,big,sub,labels] of JOKES)if(re.test(raw.toLowerCase()))return {labels,big,sub};
   if(kind==='lineup'){
     if(!pRows.length)return {labels:['Lineup'],big:'No player scores yet',sub:'Lineups load the next time the weekly update runs.'};
     if(!sc.ms.length)return {labels:['Lineup'],big:'Whose lineup?',sub:'Add a manager and a week, like "'+nm(Object.keys(M)[0]).split(' ')[0].toLowerCase()+' lineup week 4 '+latest.year+'".'};
