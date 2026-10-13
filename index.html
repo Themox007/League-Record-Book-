@@ -10,15 +10,16 @@
 :root{
   --bg:#f2f5f1; --surface:#ffffff; --ink:#14201a; --muted:#59695f; --line:#d3dcd5;
   --accent:#0b6b3a; --accent-ink:#ffffff; --tint:#e3efe6; --win:#0b6b3a; --loss:#b3261e;
+  --c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;
   --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
   --body:"Barlow","Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0d1411; --surface:#151e19; --ink:#e8efe9; --muted:#98a89d; --line:#29372e;
-  --accent:#4fd08a; --accent-ink:#06140c; --tint:#1a2a21; --win:#4fd08a; --loss:#ff8a80; color-scheme:dark } }
+  --accent:#4fd08a; --accent-ink:#06140c; --tint:#1a2a21; --win:#4fd08a; --loss:#ff8a80; --c1:#3987e5; --c2:#d95926; --c3:#199e70; color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#0d1411; --surface:#151e19; --ink:#e8efe9; --muted:#98a89d; --line:#29372e;
-  --accent:#4fd08a; --accent-ink:#06140c; --tint:#1a2a21; --win:#4fd08a; --loss:#ff8a80; color-scheme:dark }
+  --accent:#4fd08a; --accent-ink:#06140c; --tint:#1a2a21; --win:#4fd08a; --loss:#ff8a80; --c1:#3987e5; --c2:#d95926; --c3:#199e70; color-scheme:dark }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);padding-inline:16px;padding-block:28px 56px}
@@ -89,6 +90,31 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12p
 .lu .pos{color:var(--muted);font-size:12px;padding-top:2px}
 .lu .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lu .top{color:var(--win);font-weight:600}
+h3.sec{font:700 22px/1.1 var(--display);text-transform:uppercase;letter-spacing:.02em;margin:10px 0 8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:16px;height:3px;border-radius:2px}
+.sw.s0,.ln.s0{background:var(--c1);stroke:var(--c1)}.sw.s1,.ln.s1{background:var(--c2);stroke:var(--c2)}.sw.s2,.ln.s2{background:var(--c3);stroke:var(--c3)}
+.sw.avg{background:var(--muted)}
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px;overflow-x:auto}
+.chart svg{width:100%;min-width:520px;height:auto;display:block}
+.chart .grid{stroke:var(--line);stroke-width:1}.chart .ax{fill:var(--muted);font:12px var(--body)}
+.chart .ln{stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .avgline{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 4}
+.chart .dot{stroke:var(--surface);stroke-width:2}.chart .dot.s0{fill:var(--c1)}.chart .dot.s1{fill:var(--c2)}.chart .dot.s2{fill:var(--c3)}
+.recap{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.recap pre{margin:0;width:100%;white-space:pre-wrap;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;font:14px/1.55 var(--body)}
+.copy{font:700 16px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;padding:10px 16px;border:2px solid var(--ink);border-radius:6px;background:var(--ink);color:var(--bg)}
+.banner{display:flex;flex-direction:column;gap:10px;width:100%;text-align:left;background:var(--surface);border:2px solid var(--ink);border-radius:6px;padding:14px 16px}
+.banner .bt{font:700 20px/1 var(--display);text-transform:uppercase;letter-spacing:.02em}
+.banner .bt small{font:500 13px var(--body);text-transform:none;letter-spacing:0;color:var(--muted);margin-left:8px}
+.banner .bs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.banner .bs div{display:flex;flex-direction:column;min-width:0}
+.banner .bs span{font:600 11px/1.3 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.banner .bs b{font:700 24px/1.05 var(--display);font-variant-numeric:tabular-nums}
+.banner .bs small{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+#home{display:flex;flex-direction:column;gap:12px}
+@media (max-width:600px){.banner .bs{grid-template-columns:1fr}}
 details.bench summary{cursor:pointer;font-size:13px;color:var(--muted);padding:6px 0 2px}
 @media (max-width:480px){#go{padding:0 14px}.tiles{grid-template-columns:1fr}.lineups{grid-template-columns:1fr}.lineups>div+div{border-left:0;border-top:1px solid var(--line)}.mscore{font-size:22px}}
 </style>
@@ -153,7 +179,7 @@ function build(d){
     const tm={};s.teams.forEach(t=>tm[t.teamId]=t);
     for(const r of s.playerWeeks||[]){
       const t=tm[r[1]],p=P[r[2]];if(!t||!p)continue;
-      pRows.push({year:s.year,week:r[0],m:t.managerId,team:t.name,pid:String(r[2]),name:p[0],pos:p[1],slot:r[3],pts:r[4]});
+      pRows.push({year:s.year,week:r[0],m:t.managerId,team:t.name,pid:String(r[2]),name:p[0],pos:p[1],slot:r[3],pts:r[4],proj:r[5]==null?null:r[5]});
       tot[r[2]]=(tot[r[2]]||0)+r[4];
     }
   }
@@ -194,11 +220,22 @@ function parse(raw){
   const hi=has(/most|highest|best|\btop\b|biggest|record|maximum/);
   const pos=has(/\bqbs?\b|quarterback/)?'QB':has(/\brbs?\b|running ?back/)?'RB':has(/\bwrs?\b|receiver/)?'WR':has(/\btes?\b|tight ?end/)?'TE':has(/kicker/)?'K':has(/d\/?st\b|defen[cs]e/)?'D/ST':null;
   let kind=null;
+  const raw0=raw.toLowerCase().trim();
   if(wantLineup)kind='lineup';
+  else if(has(/project|\bbooms?\b|over.?perform|under.?perform|beat (his|their|the) proj/))kind='proj';
+  else if(has(/coach|optimal|points? left|left on (the )?bench|best possible|should (have|of) won|would (have|of) won|bench(ed)? points/))kind='coach';
+  else if(has(/\brecap\b|write.?up/))kind='recap';
+  else if(has(/shame/))kind='shame';
+  else if(has(/all.?play|luck(iest|y)? (manager|rating|index)|unluckiest|schedule luck|luck rating|robbed/))kind='allplay';
+  else if(has(/\btrades?\b|\btraded\b/))kind='trades';
+  else if(has(/pick.?ups?|waiver|\bfaab\b|free agents?|\badds\b|\badded\b/))kind='pickups';
+  else if(has(/\bdraft(ed|s)?\b|\bpicks?\b|\bsteals?\b|\bbusts?\b/))kind='draft';
+  else if(has(/chart|graph|\bplot\b|trend/))kind='chart';
+  else if(/^(season\s*)?20\d\d(\s*(season|recap|review|summary|overview))?$/.test(raw0))kind='season';
   else if(player)kind='player';
   else if(has(/bench/))kind='bench';
   else if(pos||has(/\bplayers?\b/))kind='pboard';
-  else if(sc.week&&!sc.ms.length&&has(/matchups?|results|recap|scoreboard|summary|everything|overview|all games/))kind='week';
+  else if(sc.week&&!sc.ms.length&&has(/matchups?|results|scoreboard|everything|all games/))kind='week';
   else if(sc.ms.length>=2)kind='h2h';
   else if(has(/champ|title|trophy|premiership|who won|won the league|winners?\b/)&&!has(/streak/))kind='champs';
   else if(has(/blowout|biggest (win|loss|margin)|largest margin|smash|thrash|flogging/))kind='blowout';
@@ -249,10 +286,105 @@ function gameTable(list){
 function group(list,key){const o={};list.forEach(x=>{(o[key(x)]=o[key(x)]||[]).push(x)});return o}
 const sum=(l,f)=>l.reduce((a,x)=>a+f(x),0);
 
+// ---------- extra data: lineups, luck, drafts, trades, pickups ----------
+const SLOT_POS={0:['QB'],1:['QB'],2:['RB'],3:['RB','WR'],4:['WR'],5:['WR','TE'],6:['TE'],7:['QB','RB','WR','TE'],16:['D/ST'],17:['K'],23:['RB','WR','TE']};
+const seasonOf=y=>seasons.find(s=>s.year===y);
+const mgrOf=(y,teamId)=>{const s=seasonOf(y),t=s&&s.teams.find(t=>t.teamId===teamId);return t?t.managerId:null};
+const teamOf=(y,teamId)=>{const s=seasonOf(y),t=s&&s.teams.find(t=>t.teamId===teamId);return t?t.name:''};
+const pname=id=>(PL[id]&&PL[id][0])||'Unknown player';
+const ppos=id=>(PL[id]&&PL[id][1])||'';
+let PL={},tw=null;
+function slotsFor(y){
+  const s=seasonOf(y),out=[];
+  if(s&&s.slotCounts&&Object.keys(s.slotCounts).length){for(const k in s.slotCounts)if(SLOT_POS[k])for(let i=0;i<s.slotCounts[k];i++)out.push(SLOT_POS[k])}
+  else{['QB','RB','RB','WR','WR','TE','K','D/ST'].forEach(p=>out.push([p]));
+    const c={};pRows.filter(r=>r.year===y&&r.slot===1).forEach(r=>{const k=r.m+'|'+r.week;c[k]=(c[k]||0)+1});
+    const tot={};Object.values(c).forEach(n=>tot[n]=(tot[n]||0)+1);const mode=+Object.keys(tot).sort((a,b)=>tot[b]-tot[a])[0]||9;
+    for(let i=8;i<mode;i++)out.push(['RB','WR','TE'])}
+  return out.sort((a,b)=>a.length-b.length);
+}
+// one record per manager per week: actual starters, best possible lineup, bench points
+function teamWeeks(){
+  if(tw)return tw;tw=[];const by={};
+  pRows.forEach(r=>{const k=r.year+'|'+r.week+'|'+r.m;(by[k]=by[k]||[]).push(r)});
+  const slotCache={};
+  for(const k in by){
+    const l=by[k],y=l[0].year,w=l[0].week,m=l[0].m,slots=slotCache[y]||(slotCache[y]=slotsFor(y));
+    const pool=l.filter(r=>r.slot!==2).slice().sort((a,b)=>b.pts-a.pts),used=new Set();let best=0;
+    for(const sl of slots){const p=pool.find(r=>!used.has(r)&&sl.includes(r.pos));if(p){used.add(p);best+=p.pts}}
+    const act=sum(l.filter(r=>r.slot===1),r=>r.pts),sc=scores.find(s=>s.year===y&&s.week===w&&s.m===m);
+    tw.push({year:y,week:w,m,team:l[0].team,act,best:Math.max(best,act),bench:sum(l.filter(r=>r.slot===0),r=>r.pts),score:sc,
+      flip:sc&&sc.res==='L'&&sc.opp&&Math.max(best,act)>sc.oppPts});
+  }
+  return tw;
+}
+// all-play: your record if you played every team every week (regular season)
+function allPlay(sc){
+  const out={},wk=group(scores.filter(s=>!s.playoff&&s.res&&(!sc.year||s.year===sc.year)),s=>s.year+'|'+s.week);
+  for(const k in wk){const l=wk[k];for(const s of l){const o=out[s.m]=out[s.m]||{m:s.m,w:0,l:0,t:0,aw:0,al:0,gp:0};
+    o.gp++;if(s.res==='W')o.w++;else if(s.res==='L')o.l++;else o.t++;
+    for(const x of l)if(x!==s){if(s.pts>x.pts)o.aw++;else if(s.pts<x.pts)o.al++;else{o.aw+=.5;o.al+=.5}}}}
+  return Object.values(out).map(o=>{o.ap=o.aw/((o.aw+o.al)||1);o.exp=o.ap*o.gp;o.luck=o.w+o.t/2-o.exp;return o});
+}
+function seasonPts(y){const o={};pRows.forEach(r=>{if(r.year===y)o[r.pid]=(o[r.pid]||0)+r.pts});return o}
+function draftRows(){
+  const out=[];
+  for(const s of seasons){if(!s.draft||!s.draft.length)continue;const sp=seasonPts(s.year);
+    const rows=s.draft.map(d=>({year:s.year,pick:d[0],round:d[1],teamId:d[2],pid:String(d[3]),keeper:d[4],bid:d[5],m:mgrOf(s.year,d[2]),team:teamOf(s.year,d[2]),pts:sp[d[3]]||0}));
+    const rk=rows.slice().sort((a,b)=>b.pts-a.pts);rk.forEach((r,i)=>r.rank=i+1);rows.forEach(r=>r.value=r.pick-r.rank);out.push(...rows)}
+  return out;
+}
+function startedFor(y,m,pid,fromWeek){return sum(pRows.filter(r=>r.year===y&&r.m===m&&r.pid===String(pid)&&r.slot===1&&r.week>=fromWeek),r=>r.pts)}
+function tradeRows(){
+  const out=[];
+  for(const s of seasons)for(const t of s.trades||[]){
+    const sides={};
+    for(const [pid,from,to] of t.moves){const m=mgrOf(s.year,to);if(!m)continue;(sides[m]=sides[m]||{m,team:teamOf(s.year,to),got:[]}).got.push(String(pid))}
+    const list=Object.values(sides);if(!list.length)continue;
+    list.forEach(sd=>{sd.pts=sum(sd.got,pid=>startedFor(s.year,sd.m,pid,t.week||1))});
+    list.sort((a,b)=>b.pts-a.pts);
+    out.push({year:s.year,week:t.week,sides:list,margin:list.length>1?list[0].pts-list[list.length-1].pts:0});
+  }
+  return out;
+}
+function addRows(){
+  const out=[];
+  for(const s of seasons)for(const a of s.adds||[]){const m=mgrOf(s.year,a[1]);if(!m)continue;
+    out.push({year:s.year,week:a[0],m,team:teamOf(s.year,a[1]),pid:String(a[2]),how:a[3],bid:a[4]||0,pts:startedFor(s.year,m,a[2],a[0]||1)})}
+  return out;
+}
+function tableHtml(colsIn,rowsIn){
+  const cols=colsIn.map(c=>({t:c.replace(/:n$/,''),n:/:n$/.test(c)}));
+  return '<div class="scroll"><table><thead><tr>'+cols.map(c=>'<th'+(c.n?' class="n"':'')+'>'+esc(c.t)+'</th>').join('')+'</tr></thead><tbody>'+
+    rowsIn.map(row=>'<tr>'+row.map((c,i)=>{const cl=cols[i]&&cols[i].n?'n':'';
+      if(c&&c.html)return '<td class="'+cl+'">'+c.html+'</td>';
+      if(c&&c.k!==undefined)return '<td class="k '+cl+'">'+esc(c.k)+(c.small?' <span class="small">'+esc(c.small)+'</span>':'')+'</td>';
+      return '<td class="'+cl+'">'+esc(c)+'</td>'}).join('')+'</tr>').join('')+'</tbody></table></div>';
+}
+const sec=(title,body)=>'<h3 class="sec">'+esc(title)+'</h3>'+body;
+const stat=(t,v,d)=>'<div class="stat"><span>'+esc(t)+'</span><b>'+esc(v)+'</b><small>'+esc(d)+'</small></div>';
+const pct=x=>(x*100).toFixed(1)+'%';
+const sgn=x=>(x>0?'+':'')+x.toFixed(1);
+function lineChart(series,weeks,avg){
+  const W=720,H=260,L=44,R=16,T=16,B=34,vals=series.flatMap(s=>s.pts.filter(v=>v!=null)).concat(avg.filter(v=>v!=null));
+  let lo=Math.floor(Math.min(...vals)/20)*20,hi=Math.ceil(Math.max(...vals)/20)*20;if(hi===lo)hi=lo+20;
+  const x=i=>L+(weeks.length<2?0:i*(W-L-R)/(weeks.length-1)),y=v=>T+(hi-v)*(H-T-B)/(hi-lo);
+  let g='';for(let v=lo;v<=hi;v+=20)g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" class="grid"/><text x="'+(L-8)+'" y="'+(y(v)+4)+'" class="ax" text-anchor="end">'+v+'</text>';
+  weeks.forEach((w,i)=>{g+='<text x="'+x(i)+'" y="'+(H-12)+'" class="ax" text-anchor="middle">'+w+'</text>'});
+  const path=(arr)=>arr.map((v,i)=>v==null?null:[x(i),y(v)]).reduce((a,p)=>{if(!p){a.push(null);return a}const last=a[a.length-1];a.push((last?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1));return a},[]).filter(Boolean).join(' ');
+  g+='<path d="'+path(avg)+'" class="avgline" fill="none"/>';
+  series.forEach((s,k)=>{g+='<path d="'+path(s.pts)+'" class="ln s'+k+'" fill="none"/>';
+    s.pts.forEach((v,i)=>{if(v!=null)g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="4" class="dot s'+k+'"><title>'+esc(s.name)+', week '+weeks[i]+': '+p2(v)+'</title></circle>'})});
+  const legend='<div class="legend">'+series.map((s,k)=>'<span><i class="sw s'+k+'"></i>'+esc(s.name)+'</span>').join('')+'<span><i class="sw avg"></i>League average</span></div>';
+  return legend+'<div class="chart"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Weekly scores">'+g+'</svg></div>';
+}
+
+const has2=(raw,r)=>r.test(raw.toLowerCase());
+
 // Joke answers. Add more lines here: [words to look for, the answer, the line underneath, the tags]
 // The first one that matches wins, so keep the more specific ones higher up.
 const JOKES=[
-  [/\bhelp\b|how does this work|how do i use|what can i (ask|search|type)|\bexamples?\b|\bcommands\b/,'Try these','Week 5 2024 · lowest score in week 5 · luke lineup week 4 2026 · joe mixon week 5 2022 · luke vs zane · who won the league · longest losing streak · biggest bench score',['Help desk','League office']],
+  [/\bhelp\b|how does this work|how do i use|what can i (ask|search|type)|\bexamples?\b|\bcommands\b/,'Try these','Week 5 2024 · 2024 season · luke · luke vs zane chart · trades · best pickups · 2024 draft · draft steals · coach rating · luckiest manager · biggest booms · hall of shame · recap · luke lineup week 4 2026 · joe mixon week 5 2022',['Help desk','League office']],
   [/\b(hello|hi|hey|gday|yo|sup)\b/,"G'day",'Ask about scores, lineups, players, or who owes beers. Type help for examples.',['Welcome','League office']],
   [/\b(thanks|thank you|cheers|ta)\b/,'No worries','The league office is always here for you.',['Customer service','5 stars']],
   [/\b(updated?|updates|refresh|new scores)\b/,'Every Tuesday and Wednesday','New scores land after Monday Night Football, then again for stat corrections. The date at the bottom of the page shows the last update.',['How it works','Automatic']],
@@ -263,8 +395,8 @@ const JOKES=[
   [/(dick|cock|penis|schlong|package)/,'Luke','Measured & verified by the league office. Only discoverer of the clitoris',['Official league record','Biggest All time','Undisputed','9.4 Inches']],
   [/\bgoat\b|greatest of all time/,'Luke','Five seasons of evidence. The league office considers the matter closed.',['Official league record','All time','Undisputed']],
   [/who (will|is going to|gonna) win|win (it )?this year/,'Not you','The league office has run the numbers. Several times.',['Prediction','2026','Certain']],
-  [/\btrades?\b/,'Liam','Worst trade in league history. Still being studied by economists.',['Official league record','Fleeced','Under investigation']],
-  [/\bdraft\b/,'Ryan','Took a kicker in round 4 and called it "a value pick".',['Draft history','Lowlight','Never forgotten']],
+  [/\b(fleeced|daylight robbery|robbery)\b/,'Liam','Worst trade in league history. Still being studied by economists.',['Official league record','Fleeced','Under investigation']],
+  [/\bworst drafter\b|\bdraft dodger\b/,'Ryan','Took a kicker in round 4 and called it "a value pick".',['Draft history','Lowlight','Never forgotten']],
   [/\b(asleep|afk|inactive|ghost|ghosted)\b/,'Ryan','Last lineup change detected: sometime in 2023. Started a player on bye three weeks running.',['Activity report','Missing person']],
   [/\b(commish|commissioner)\b/,'Liam','Abuse of power currently under review by an independent tribunal.',['League office','Corruption watch']],
   [/\b(sook|whinge|whinger|cries|crybaby|salty)\b/,'Will S','Has formally complained about every stat correction since 2022.',['Official league record','Most complaints','Ongoing']],
@@ -274,7 +406,7 @@ const JOKES=[
   [/\b(dumbest|stupidest|idiot|muppet)\b/,'Max','Once picked up a player off waivers who had retired two years earlier.',['Official league record','Lowlight','Unbeaten']],
   [/\btank(ing)?\b/,'Seb','Swears it is a strategy. It is not a strategy.',['Strategy review','Rejected']],
   [/\b(collusion|rigged|cheat|cheating|cheater)\b/,'Kyah','Evidence submitted to the league office. It is mostly screenshots of the group chat.',['League office','Under investigation']],
-  [/\b(waivers?|faab)\b/,'Seb','Spent the entire budget in week 1 on Emmanuel Wilson.',['Waiver report','Budget: $0']],
+  [/\b(blew|wasted|blow) (the |his |their )?(budget|faab)\b/,'Seb','Spent the entire budget in week 1 on Emmanuel Wilson.',['Waiver report','Budget: $0']],
   [/\b(trash talk|chirp|chirping|banter)\b/,'Zane','All talk. Check the standings.',['Talk vs results','Mismatch detected']],
   [/\bexcuses?\b/,'Karl','Top excuses: injuries, the refs, the wifi, Mercury in retrograde.',['Excuse tracker','Updated weekly']],
   [/\b(mum|mom|mother)\b/,'Your mum','Undefeated. Top of the ladder every season.',['Official league record','All time','Unbeaten']],
@@ -305,13 +437,13 @@ const JOKES=[
   [/\bboring\b/,'Seb','Starts the same lineup every week. Has not made a move since 2024.',['Excitement report','Flatlined']],
   [/\b(jinx|jinxed|curse|cursed)\b/,'Rohan','Every player he drafts tears something by week 3.',['Medical report','Cursed']],
   [/\b(gambler|gambling|punter|multi|bet|bets)\b/,'Kyah','Lost a same-game multi on his own fantasy players. Twice.',['Betting report','Down bad']],
-  [/\b(group chat|gc)\b/,'Will S','Most messages sent. Fewest points scored.',['Group chat stats','Inverse relationship']],
+  [/^(?!.*recap).*\b(group chat|gc)\b/,'Will S','Most messages sent. Fewest points scored.',['Group chat stats','Inverse relationship']],
   [/\b(hall of fame|hof)\b/,'Luke','First ballot.',['Hall of fame','Inducted']],
   [/\b(diva|drama|dramatic)\b/,'Will O','Threatened to leave the league over a 0.2 point stat correction.',['Incident report','Overreaction']],
-  [/\blate\b/,'Seb','Set his lineup after kickoff. Again.',['Activity report','Tardy']],
-  [/\bmid\b(?!.?season)/,'Zane','Aggressively mid. Mathematically the median manager.',['Official league record','Perfectly average']],
+  [/\blate\b(?!.?(round|pick))/,'Seb','Set his lineup after kickoff. Again.',['Activity report','Tardy']],
+  [/\bmid\b(?!.?(season|round))/,'Zane','Aggressively mid. Mathematically the median manager.',['Official league record','Perfectly average']],
   [/\broast(ed|ing)?\b/,'Ryan','Roasted so often he now comes with gravy.',['Roast report','Well done']],
-  [/\b(coach|coaching)\b/,'Lachlan','Coaching staff has been placed on administrative leave.',['Staff report','Under review']],
+  [/\b(sack|fire) the coach\b|\bcoaching staff\b/,'Lachlan','Coaching staff has been placed on administrative leave.',['Staff report','Under review']],
   [/\b(sus|suss|sketchy|dodgy)\b/,'Liam','Has accepted three trades from himself. The league office is looking into it.',['League office','Suspicious activity']],
 ];
 function answer(raw){
@@ -320,6 +452,167 @@ function answer(raw){
   const mine=s=>!sc.ms.length||sc.ms.includes(s.m);
   const none={labels:['No results'],big:'Nothing found',sub:'No finished games match that. Try a different week or season.'};
   if(!kind)return {labels:["Didn't catch that"],big:'Try another way',sub:'Ask about scores, records, blowouts, streaks, champions, a player, or type two managers to compare them.'};
+  if(['coach','allplay','draft','trades','pickups','proj','recap','shame','chart','season'].includes(kind)){
+    const needP=['coach','proj'].includes(kind);
+    if(needP&&!pRows.length)return {labels:['Players'],big:'No player scores yet',sub:'This loads the next time the weekly update runs.'};
+    const sp={...sc,phase:null};
+    if(kind==='coach'){
+      let l=teamWeeks().filter(t=>(!sc.year||t.year===sc.year)&&(!sc.week||t.week===sc.week));
+      if(sc.ms.length===1&&!has2(raw,/managers|everyone|league/)){
+        const m=sc.ms[0],mine2=l.filter(t=>t.m===m).sort((a,b)=>(b.best-b.act)-(a.best-a.act));if(!mine2.length)return none;
+        const left=sum(mine2,t=>t.best-t.act),flips=mine2.filter(t=>t.flip);
+        return {labels:labels('Coach rating',sp),big:nm(m)+' · '+pct(sum(mine2,t=>t.act)/sum(mine2,t=>t.best)),
+          sub:p2(left)+' points left on the bench across '+mine2.length+' weeks · '+flips.length+(flips.length===1?' loss':' losses')+' a perfect lineup would have won',
+          cols:['When','Started:n','Best possible:n','Left on bench:n','Result'],rows:mine2.slice(0,25).map(t=>[pwhen(t),p2(t.act),p2(t.best),p2(t.best-t.act),
+            {html:t.score&&t.score.opp?res(t.score.res)+' vs '+esc(nm(t.score.opp))+(t.flip?' <b class="w">would have won</b>':''):''}]),
+          note:'Worst weeks first. "Best possible" picks the highest-scoring legal lineup from everyone on the roster that week.'};
+      }
+      const by=group(l,t=>t.m);let rows=Object.keys(by).map(m=>{const a=by[m];return {m,act:sum(a,t=>t.act),best:sum(a,t=>t.best),flips:a.filter(t=>t.flip).length,n:a.length}});
+      if(!rows.length)return none;rows.forEach(r=>r.rate=r.act/r.best);
+      const worst=low||has2(raw,/worst|bad|left|bench|should|would/);rows.sort((a,b)=>worst?a.rate-b.rate:b.rate-a.rate);const t=rows[0];
+      return {labels:labels(worst?'Worst coach':'Best coach',sp),big:nm(t.m)+' · '+pct(t.rate),
+        sub:p2(t.best-t.act)+' points left on the bench · '+t.flips+(t.flips===1?' loss':' losses')+' a perfect lineup would have won',
+        cols:['#','Manager','Coach rating:n','Left on bench:n','Per week:n','Losses he could have won:n'],
+        rows:rows.map((r,i)=>[i+1,{k:nm(r.m)},pct(r.rate),p2(r.best-r.act),p2((r.best-r.act)/r.n),r.flips]),
+        note:'Coach rating = points started ÷ best possible lineup from the same roster. Add a name to see that manager\'s worst weeks.'};
+    }
+    if(kind==='allplay'){
+      let rows=allPlay(sc).filter(o=>!sc.ms.length||sc.ms.includes(o.m));if(!rows.length)return none;
+      const unl=has2(raw,/unluck|robbed|hard done/);rows.sort((a,b)=>unl?a.luck-b.luck:b.luck-a.luck);const t=rows[0];
+      return {labels:labels(unl?'Unluckiest manager':'Luckiest manager',sp,['Regular season']),
+        big:nm(t.m)+' · '+sgn(t.luck)+' wins',sub:'Actual record '+t.w+'–'+t.l+', but scored like a '+t.exp.toFixed(1)+'–'+(t.gp-t.exp).toFixed(1)+' team ('+pct(t.ap)+' against the whole league each week)',
+        cols:['#','Manager','Record','All-play','All-play %:n','Luck (wins):n'],
+        rows:rows.map((r,i)=>[i+1,{k:nm(r.m)},r.w+'–'+r.l+(r.t?'–'+r.t:''),Math.round(r.aw)+'–'+Math.round(r.al),pct(r.ap),{html:'<span class="'+(r.luck>=0?'w':'l')+'">'+sgn(r.luck)+'</span>'}]),
+        note:'All-play = your record if you played every team every week. Luck = actual wins minus the wins your scores deserved.'};
+    }
+    if(kind==='draft'){
+      const all=draftRows();if(!all.length)return {labels:['Draft'],big:'No draft data yet',sub:'Draft history loads the next time the weekly update runs.'};
+      const yrs=[...new Set(all.map(d=>d.year))],yr=sc.year||Math.max(...yrs);
+      if(player){const l=all.filter(d=>d.pid===player.id).sort((a,b)=>b.year-a.year);
+        if(!l.length)return {labels:['Draft',player.name],big:player.name,sub:'Never drafted in this league.'};
+        return {labels:['Draft',player.name,'All time'],big:player.name+' · drafted '+l.length+(l.length===1?' time':' times'),sub:l.map(d=>d.year+': pick '+d.pick+' by '+nm(d.m)).join(' · '),
+          cols:['Season','Pick:n','Round:n','Manager','Season points:n'],rows:l.map(d=>[d.year,d.pick,d.round,{k:nm(d.m),small:d.team},p2(d.pts)])}}
+      const steal=has2(raw,/steal|best pick|value/),bust=has2(raw,/bust|worst pick|flop/);
+      if(steal||bust){
+        let l=all.filter(d=>(!sc.year||d.year===sc.year)&&(!sc.ms.length||sc.ms.includes(d.m)));
+        const teams=seasonOf(yr)?seasonOf(yr).teams.length:12;
+        l=bust?l.filter(d=>d.round<=4).sort((a,b)=>a.value-b.value):l.filter(d=>d.rank<=40).sort((a,b)=>b.value-a.value);
+        if(!l.length)return none;const t=l[0];
+        return {labels:labels(bust?'Biggest draft busts':'Biggest draft steals',sp),big:pname(t.pid)+' · pick '+t.pick,
+          sub:t.year+' · '+nm(t.m)+' · finished #'+t.rank+' for points among drafted players ('+p2(t.pts)+')',
+          cols:['#','Player','Season','Pick:n','Manager','Points:n','Points rank:n'],
+          rows:l.slice(0,15).map((d,i)=>[i+1,{k:pname(d.pid),small:ppos(d.pid)},d.year,d.pick,nm(d.m),p2(d.pts),d.rank]),
+          note:(bust?'Rounds 1-4 only. ':'')+'Points = what the player scored while on a roster in this league that season.'};
+      }
+      let l=all.filter(d=>d.year===yr&&(!sc.ms.length||sc.ms.includes(d.m)));if(!l.length)return {labels:['Draft',String(yr)],big:'No draft found',sub:'No draft recorded for '+yr+'.'};
+      const auction=l.some(d=>d.bid>0),best=l.slice().sort((a,b)=>b.value-a.value)[0];
+      return {labels:labels('Draft',{...sp,year:yr}),big:sc.ms.length?nm(sc.ms[0])+'\'s '+yr+' draft':yr+' draft',
+        sub:'Best value: '+pname(best.pid)+' (pick '+best.pick+', finished #'+best.rank+')'+(sc.ms.length?' · '+p2(sum(l,d=>d.pts))+' points from these picks':''),
+        cols:['Pick:n','Rd:n','Manager','Player','Pos'].concat(auction?['Cost:n']:[]).concat(['Points:n','Rank:n']),
+        rows:l.map(d=>[d.pick,d.round,nm(d.m),{k:pname(d.pid)+(d.keeper?' (keeper)':'')},ppos(d.pid)].concat(auction?['$'+d.bid]:[]).concat([p2(d.pts),d.rank])),
+        note:'Rank = where the player finished for points among everyone drafted that year. Points count while on a roster in this league.'};
+    }
+    if(kind==='trades'){
+      let l=tradeRows();if(!seasons.some(s=>s.trades))return {labels:['Trades'],big:'No trade data yet',sub:'Trades load the next time the weekly update runs.'};
+      l=l.filter(t=>(!sc.year||t.year===sc.year)&&(!sc.ms.length||t.sides.some(sd=>sc.ms.includes(sd.m)))&&(!player||t.sides.some(sd=>sd.got.includes(player.id))));
+      if(!l.length)return {labels:labels('Trades',sp),big:'No trades found',sub:'Nothing matches that. Trades only count once they went through.'};
+      const lop=l.slice().sort((a,b)=>b.margin-a.margin)[0],w=lop.sides[0],ls=lop.sides[lop.sides.length-1];
+      l.sort((a,b)=>b.year-a.year||b.week-a.week);
+      const card=t=>'<div class="match"><div class="mtag">Week '+t.week+', '+t.year+'</div><div class="lineups">'+t.sides.map(sd=>'<div><div class="lh">'+esc(nm(sd.m))+' got · '+p2(sd.pts)+' pts started</div><ul class="lu">'+
+        sd.got.map(pid=>'<li><span class="pos">'+esc(ppos(pid))+'</span><span class="pn">'+esc(pname(pid))+'</span><span>'+p2(startedFor(t.year,sd.m,pid,t.week||1))+'</span></li>').join('')+'</ul></div>').join('')+'</div></div>';
+      return {labels:labels('Trades',sp),big:nm(w.m)+' won by '+p2(lop.margin),
+        sub:'Most lopsided: week '+lop.week+', '+lop.year+'. '+nm(w.m)+' started '+p2(w.pts)+' points from what he got, '+nm(ls.m)+' started '+p2(ls.pts)+'. '+l.length+(l.length===1?' trade':' trades')+' shown.',
+        html:'<div class="matches">'+l.map(card).join('')+'</div>',note:'Points = points each side started from the players they received, for the rest of that season.'};
+    }
+    if(kind==='pickups'){
+      let l=addRows();if(!seasons.some(s=>s.adds))return {labels:['Pickups'],big:'No pickup data yet',sub:'Pickups load the next time the weekly update runs.'};
+      l=l.filter(a=>(!sc.year||a.year===sc.year)&&(!sc.week||a.week===sc.week)&&(!sc.ms.length||sc.ms.includes(a.m))&&(!player||a.pid===player.id));
+      if(!l.length)return {labels:labels('Pickups',sp),big:'No pickups found',sub:'Nothing matches that.'};
+      if(has2(raw,/faab|budget|spent|spend|bids?\b|money/)){
+        const by=group(l,a=>a.m),rows=Object.keys(by).map(m=>({m,n:by[m].length,spent:sum(by[m],a=>a.bid),pts:sum(by[m],a=>a.pts)})).sort((a,b)=>b.spent-a.spent);const t=rows[0];
+        return {labels:labels('Waiver spending',sp),big:nm(t.m)+' · $'+t.spent,sub:t.n+' pickups, '+p2(t.pts)+' points started from them',
+          cols:['#','Manager','Pickups:n','Spent:n','Points started:n','Points per $:n'],rows:rows.map((r,i)=>[i+1,{k:nm(r.m)},r.n,'$'+r.spent,p2(r.pts),r.spent?p2(r.pts/r.spent):'–'])};
+      }
+      const worst=low;l.sort((a,b)=>worst?(b.bid-a.bid)||(a.pts-b.pts):b.pts-a.pts);if(worst)l=l.filter(a=>a.bid>0).sort((a,b)=>(a.pts/a.bid)-(b.pts/b.bid));
+      if(!l.length)return none;const t=l[0];
+      return {labels:labels(worst?'Worst pickups':'Best pickups',sp),big:pname(t.pid)+' · '+p2(t.pts),
+        sub:'Picked up by '+nm(t.m)+' in week '+t.week+', '+t.year+(t.bid?' for $'+t.bid:t.how==='W'?' off waivers':' as a free agent')+' · points started for him afterwards',
+        cols:['#','Player','Manager','When','How','Points started:n'],rows:l.slice(0,20).map((a,i)=>[i+1,{k:pname(a.pid),small:ppos(a.pid)},nm(a.m),pwhen(a),a.how==='W'?'Waiver'+(a.bid?' $'+a.bid:''):'Free agent',p2(a.pts)])};
+    }
+    if(kind==='proj'){
+      const l=pRows.filter(r=>r.proj!=null&&r.slot===1&&(!sc.year||r.year===sc.year)&&(!sc.week||r.week===sc.week)&&mine(r)&&(!player||r.pid===player.id));
+      if(!l.length)return {labels:['Projections'],big:'No projections yet',sub:'Projections load the next time the weekly update runs.'};
+      const bust=low||has2(raw,/bust|under/);l.sort((a,b)=>bust?(a.pts-a.proj)-(b.pts-b.proj):(b.pts-b.proj)-(a.pts-a.proj));const t=l[0];
+      const by=group(l,r=>r.m),mrows=Object.keys(by).map(m=>({m,a:sum(by[m],r=>r.pts),p:sum(by[m],r=>r.proj),n:by[m].length})).sort((a,b)=>(b.a-b.p)-(a.a-a.p));
+      return {labels:labels(bust?'Biggest busts vs projection':'Biggest booms vs projection',sp),big:t.name+' · '+sgn(t.pts-t.proj),
+        sub:pwhen(t)+' · projected '+p2(t.proj)+', scored '+p2(t.pts)+' · '+pfor(t),
+        cols:['#','Player','When','Projected:n','Scored:n','Difference:n','Manager'],rows:l.slice(0,15).map((r,i)=>[i+1,{k:r.name,small:r.pos},pwhen(r),p2(r.proj),p2(r.pts),sgn(r.pts-r.proj),nm(r.m)]),
+        html:sec('Managers vs projections',tableHtml(['#','Manager','Projected:n','Scored:n','Difference:n'],mrows.map((r,i)=>[i+1,{k:nm(r.m)},p2(r.p),p2(r.a),{html:'<span class="'+(r.a>=r.p?'w':'l')+'">'+sgn(r.a-r.p)+'</span>'}]))),
+        note:'Starters only. Projections are ESPN\'s, from before kickoff.'};
+    }
+    if(kind==='recap'){
+      const yr=sc.year||latest.year,wk=sc.week||Math.max(0,...games.filter(g=>g.year===yr).map(g=>g.week));
+      const gl=games.filter(g=>g.year===yr&&g.week===wk&&!g.side);if(!gl.length)return {labels:['Recap'],big:'Nothing to recap',sub:'Week '+wk+', '+yr+' has no finished games.'};
+      const sl=scores.filter(s=>s.year===yr&&s.week===wk&&!s.side&&s.opp),hiS=sl.reduce((a,b)=>b.pts>a.pts?b:a),loS=sl.reduce((a,b)=>b.pts<a.pts?b:a);
+      const blow=gl.reduce((a,b)=>b.margin>a.margin?b:a),close=gl.reduce((a,b)=>b.margin<a.margin?b:a);
+      const pr=pRows.filter(r=>r.year===yr&&r.week===wk),topP=pr.filter(r=>r.slot===1).sort((a,b)=>b.pts-a.pts)[0],benchP=pr.filter(r=>r.slot===0).sort((a,b)=>b.pts-a.pts)[0];
+      const tws=teamWeeks().filter(t=>t.year===yr&&t.week===wk).sort((a,b)=>(b.best-b.act)-(a.best-a.act)),coachW=tws[0],flips=tws.filter(t=>t.flip);
+      const lines=['WEEK '+wk+' RECAP ('+yr+')','','🏆 Top score: '+nm(hiS.m)+' '+p2(hiS.pts),'🥄 Wooden spoon: '+nm(loS.m)+' '+p2(loS.pts),
+        '💥 Biggest win: '+nm(blow.hi.m)+' beat '+nm(blow.lo.m)+' by '+p2(blow.margin),'😬 Closest: '+nm(close.hi.m)+' beat '+nm(close.lo.m)+' by '+p2(close.margin)];
+      if(topP)lines.push('⭐ Top player: '+topP.name+' '+p2(topP.pts)+' for '+nm(topP.m));
+      if(benchP)lines.push('🪑 Bench blunder: '+nm(benchP.m)+' benched '+benchP.name+' ('+p2(benchP.pts)+')');
+      if(coachW)lines.push('🧠 Worst coaching: '+nm(coachW.m)+' left '+p2(coachW.best-coachW.act)+' points on the bench');
+      flips.forEach(t=>lines.push('🤦 '+nm(t.m)+' would have won with his best lineup'));
+      lines.push('','RESULTS');gl.slice().sort((a,b)=>b.hi.pts-a.hi.pts).forEach(g=>lines.push(nm(g.hi.m)+' '+p2(g.hi.pts)+' def. '+nm(g.lo.m)+' '+p2(g.lo.pts)));
+      lines.push('','Full week: themox007.github.io/League-Record-Book-');
+      const text=lines.join('\n');
+      return {labels:['Group chat recap','Week '+wk,String(yr)],big:'Week '+wk+' recap',sub:'Ready to paste into the group chat.',
+        html:'<div class="recap"><button type="button" class="copy" data-copy="recapText">Copy recap</button><pre id="recapText">'+esc(text)+'</pre></div>'};
+    }
+    if(kind==='shame'){
+      const lowS=scores.filter(s=>!s.side&&s.opp).sort((a,b)=>a.pts-b.pts).slice(0,8);
+      const beat=games.filter(g=>!g.side).sort((a,b)=>b.margin-a.margin).slice(0,6);
+      let h=sec('Lowest scores ever',tableHtml(['#','Manager','Points:n','When','Result'],lowS.map((s,i)=>[i+1,{k:nm(s.m),small:s.team},p2(s.pts),when(s),{html:res(s.res)+' vs '+esc(nm(s.opp))}])));
+      h+=sec('Biggest beatdowns',tableHtml(['Loser','Lost by:n','To','Score:n','When'],beat.map(g=>[{k:nm(g.lo.m)},p2(g.margin),nm(g.hi.m),p2(g.lo.pts)+'–'+p2(g.hi.pts),when(g)])));
+      if(pRows.length){
+        const fl=teamWeeks().filter(t=>t.flip).sort((a,b)=>(b.best-b.act)-(a.best-a.act)).slice(0,8);
+        h+=sec('Lost with the winning lineup on the bench',fl.length?tableHtml(['Manager','When','Started:n','Best possible:n','Opponent scored:n'],fl.map(t=>[{k:nm(t.m)},pwhen(t),p2(t.act),p2(t.best),p2(t.score.oppPts)])):'<p class="note">Nobody, somehow.</p>');
+        const bb=pRows.filter(r=>r.slot===0).sort((a,b)=>b.pts-a.pts).slice(0,8);
+        h+=sec('Biggest scores left on the bench',tableHtml(['Player','Points:n','Benched by','When'],bb.map(r=>[{k:r.name,small:r.pos},p2(r.pts),nm(r.m),pwhen(r)])));
+        const z=pRows.filter(r=>r.slot===1&&r.pts<=0),zc=group(z,r=>r.m),zr=Object.keys(zc).map(m=>({m,n:zc[m].length,last:zc[m].sort((a,b)=>b.year-a.year||b.week-a.week)[0]})).sort((a,b)=>b.n-a.n);
+        h+=sec('Started a player who scored zero (or less)',zr.length?tableHtml(['Manager','Times:n','Most recent'],zr.map(r=>[{k:nm(r.m)},r.n,r.last.name+', '+pwhen(r.last)])):'<p class="note">Clean sheet.</p>');
+      }
+      const lasts=seasons.filter(s=>s.done).map(s=>{const t=s.teams.slice().sort((a,b)=>b.finalRank-a.finalRank)[0];return [s.year,{k:nm(t.managerId),small:t.name},t.wins+'–'+t.losses]}).reverse();
+      if(lasts.length)h+=sec('Last place',tableHtml(['Season','Manager','Record'],lasts));
+      return {labels:['Hall of shame','All time'],big:'Hall of shame',sub:'The moments this league would rather forget. Consolation games are left out.',html:h};
+    }
+    if(kind==='chart'){
+      const ms=sc.ms.slice(0,3);if(!ms.length)return {labels:['Chart'],big:'Whose scores?',sub:'Add one to three managers, like "luke chart 2025" or "luke vs zane chart".'};
+      const yr=sc.year||Math.max(...scores.filter(s=>ms.includes(s.m)).map(s=>s.year));
+      const wl=[...new Set(scores.filter(s=>s.year===yr&&!s.side).map(s=>s.week))].sort((a,b)=>a-b);if(!wl.length)return none;
+      const series=ms.map(m=>({name:nm(m),pts:wl.map(w=>{const s=scores.find(s=>s.year===yr&&s.week===w&&s.m===m&&!s.side);return s?s.pts:null})}));
+      const avg=wl.map(w=>{const l=scores.filter(s=>s.year===yr&&s.week===w&&!s.side);return l.length?sum(l,s=>s.pts)/l.length:null});
+      return {labels:['Chart',...ms.map(nm),String(yr)],big:ms.map(nm).join(' vs ')+' · '+yr,
+        sub:series.map(s=>{const v=s.pts.filter(x=>x!=null);return s.name+' averaged '+p2(sum(v,x=>x)/v.length)}).join(' · '),
+        html:lineChart(series,wl,avg)+sec('Scores by week',tableHtml(['Week'].concat(series.map(s=>s.name+':n')).concat(['League avg:n']),wl.map((w,i)=>[w].concat(series.map(s=>s.pts[i]==null?'–':p2(s.pts[i]))).concat([avg[i]==null?'–':p2(avg[i])]))))};
+    }
+    if(kind==='season'){
+      const yr=sc.year,s=seasonOf(yr);if(!s)return {labels:[String(yr)],big:'No '+yr+' season',sub:'This league has seasons from '+seasons[0].year+' to '+seasons[seasons.length-1].year+'.'};
+      const sl=scores.filter(x=>x.year===yr&&!x.side&&x.opp),gl=games.filter(g=>g.year===yr&&!g.side);if(!sl.length)return none;
+      const st=s.teams.slice().sort((a,b)=>s.done?a.finalRank-b.finalRank:(b.wins-a.wins)||(b.pf-a.pf));
+      const hiS=sl.reduce((a,b)=>b.pts>a.pts?b:a),loS=sl.reduce((a,b)=>b.pts<a.pts?b:a),blow=gl.reduce((a,b)=>b.margin>a.margin?b:a);
+      const mvp=Object.values(group(pRows.filter(r=>r.year===yr&&r.slot===1),r=>r.pid+'|'+r.m)).map(a=>({r:a[0],pts:sum(a,r=>r.pts)})).sort((a,b)=>b.pts-a.pts)[0];
+      const ap=allPlay({year:yr}).sort((a,b)=>b.luck-a.luck),twy=Object.values(group(teamWeeks().filter(t=>t.year===yr),t=>t.m)).map(a=>({m:a[0].m,rate:sum(a,t=>t.act)/sum(a,t=>t.best)})).sort((a,b)=>b.rate-a.rate);
+      const topPF=s.teams.slice().sort((a,b)=>b.pf-a.pf)[0];
+      let h='<div class="wk-stats">'+(s.done?stat('Champion',nm(st[0].managerId),st[0].name)+stat('Runner-up',nm(st[1].managerId),st[1].name)+stat('Last place',nm(st[st.length-1].managerId),st[st.length-1].name):'')+
+        stat('Most points',p2(topPF.pf),nm(topPF.managerId))+stat('Best week',p2(hiS.pts),nm(hiS.m)+', week '+hiS.week)+stat('Worst week',p2(loS.pts),nm(loS.m)+', week '+loS.week)+
+        stat('Biggest blowout','by '+p2(blow.margin),nm(blow.hi.m)+' over '+nm(blow.lo.m)+', week '+blow.week)+
+        (mvp?stat('MVP',p2(mvp.pts),mvp.r.name+' for '+nm(mvp.r.m)):'')+(ap.length?stat('Luckiest',sgn(ap[0].luck)+' wins',nm(ap[0].m)):'')+
+        (twy.length?stat('Best coach',pct(twy[0].rate),nm(twy[0].m))+stat('Worst coach',pct(twy[twy.length-1].rate),nm(twy[twy.length-1].m)):'')+'</div>';
+      return {labels:[String(yr),s.done?'Season recap':'In progress'],big:yr+' season',sub:s.done?nm(st[0].managerId)+' won it with '+st[0].name+'.':'Season in progress, standings so far.',
+        pre:h,cols:[s.done?'Finish':'#','Manager','Record','Points:n','Against:n'],rows:st.map((t,i)=>[s.done?(t.finalRank===1?'Champion':'#'+t.finalRank):i+1,{k:nm(t.managerId),small:t.name},t.wins+'–'+t.losses,p2(t.pf),p2(t.pa)])};
+    }
+  }
   if(kind==='week'){
     const wk=sc.week,yr=sc.year||(games.filter(g=>g.week===wk).reduce((a,g)=>Math.max(a,g.year),0)||latest.year),lab=['Week '+wk,String(yr)];
     const gl=games.filter(g=>g.year===yr&&g.week===wk).sort((a,b)=>(a.side-b.side)||(b.playoff-a.playoff)||b.total-a.total);
@@ -470,15 +763,28 @@ function answer(raw){
     const w=reg.filter(s=>s.res==='W').length,ls=reg.filter(s=>s.res==='L').length,srt=l.slice().sort((a,b)=>a.pts-b.pts);
     const rows=seasons.map(s=>{const t=s.teams.find(t=>t.managerId===m);return t&&[s.year,{k:t.name},t.wins+'–'+t.losses,p2(t.pf),t.finalRank?(t.finalRank===1?'Champion':'#'+t.finalRank):'In progress']}).filter(Boolean).reverse();
     const titles=seasons.filter(s=>s.teams.some(t=>t.managerId===m&&t.finalRank===1)).length;
-    return {labels:['Manager','All time'],big:nm(m)+' · '+w+'–'+ls,
-      sub:titles+(titles===1?' title':' titles')+' · averages '+p2(sum(l,s=>s.pts)/l.length)+' · best '+p2(srt[srt.length-1].pts)+' ('+when(srt[srt.length-1])+') · worst '+p2(srt[0].pts)+' ('+when(srt[0])+')',
-      cols:['Season','Team','Record','Points:n','Finish'],rows:rows};
+    const lasts=seasons.filter(s=>s.done&&s.teams.slice().sort((a,b)=>b.finalRank-a.finalRank)[0].managerId===m).length;
+    const ap=allPlay({}).find(o=>o.m===m),tws=teamWeeks().filter(t=>t.m===m),rate=tws.length?sum(tws,t=>t.act)/sum(tws,t=>t.best):null;
+    const vb=group(l.filter(s=>s.opp&&s.res),s=>s.opp),vr=Object.keys(vb).map(o=>{const a=vb[o];return {o,n:a.length,w:a.filter(s=>s.res==='W').length,l:a.filter(s=>s.res==='L').length,pf:sum(a,s=>s.pts)/a.length,pa:sum(a,s=>s.oppPts)/a.length}}).sort((a,b)=>(b.w-b.l)-(a.w-a.l)||b.n-a.n);
+    const nem=vr.filter(r=>r.n>=3).sort((a,b)=>(a.w-a.l)-(b.w-b.l))[0];
+    const fav=Object.values(group(pRows.filter(r=>r.m===m&&r.slot===1),r=>r.pid)).map(a=>({name:a[0].name,pos:a[0].pos,n:a.length,pts:sum(a,r=>r.pts)})).sort((a,b)=>b.n-a.n||b.pts-a.pts).slice(0,8);
+    const pre='<div class="wk-stats">'+stat('Record',w+'–'+ls,'Regular season, all time')+stat('Titles',String(titles),lasts+(lasts===1?' last place':' last places'))+
+      stat('Average',p2(sum(l,s=>s.pts)/l.length),'Best '+p2(srt[srt.length-1].pts)+' · worst '+p2(srt[0].pts))+
+      (ap?stat('Luck',sgn(ap.luck)+' wins','All-play '+pct(ap.ap)):'')+(rate?stat('Coach rating',pct(rate),p2(sum(tws,t=>t.best-t.act))+' left on the bench'):'')+
+      (nem?stat('Nemesis',nm(nem.o),nem.w+'–'+nem.l+' against him'):'')+'</div>';
+    let h=sec('Against every manager',tableHtml(['Opponent','W:n','L:n','Scored:n','Conceded:n'],vr.map(r=>[{k:nm(r.o)},r.w,r.l,p2(r.pf),p2(r.pa)])));
+    if(fav.length)h+=sec('Favourite players',tableHtml(['Player','Pos','Weeks started:n','Points:n'],fav.map(f=>[{k:f.name},f.pos,f.n,p2(f.pts)])));
+    h+=sec('Best weeks',tableHtml(['Points:n','When','Result'],srt.slice(-5).reverse().map(s=>[p2(s.pts),when(s),{html:s.opp?res(s.res)+' vs '+esc(nm(s.opp)):''}])));
+    h+=sec('Worst weeks',tableHtml(['Points:n','When','Result'],srt.slice(0,5).map(s=>[p2(s.pts),when(s),{html:s.opp?res(s.res)+' vs '+esc(nm(s.opp)):''}])));
+    return {labels:['Manager','All time'],big:nm(m)+' · '+w+'–'+ls,sub:titles+(titles===1?' title':' titles')+' · '+rows.length+' seasons'+(nem?' · nemesis: '+nm(nem.o):''),
+      pre,cols:['Season','Team','Record','Points:n','Finish'],rows,html:h};
   }
 }
 
 function render(r){
   let h='<div style="display:flex;flex-direction:column;gap:16px"><div class="read">'+r.labels.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div>'+
     '<div class="answer"><div class="big">'+esc(r.big)+'</div><div class="sub">'+esc(r.sub)+'</div></div>';
+  if(r.pre)h+=r.pre;
   if(r.rows&&r.rows.length){
     const cols=r.cols.map(c=>({t:c.replace(/:n$/,''),n:/:n$/.test(c)}));
     h+='<div class="scroll"><table><thead><tr>'+cols.map(c=>'<th'+(c.n?' class="n"':'')+'>'+esc(c.t)+'</th>').join('')+'</tr></thead><tbody>'+
@@ -517,6 +823,7 @@ function run(q){
   $('#out').innerHTML=render(answer(q));$('#out').hidden=false;$('#home').hidden=true;
 }
 function start(d){
+  PL=d.players||{};
   build(d);
   const name=d.league&&d.league.name&&d.league.name.trim();if(name){$('#league').textContent=name;if(!d.demo)document.title=name+' Record Book'}
   $('#demo').hidden=!d.demo;
@@ -524,7 +831,7 @@ function start(d){
   const ex=['lowest score in week 5','highest score this season','biggest blowout ever','closest game '+latest.year,'all-time standings','who won the league','longest winning streak','most points in a season','highest score in a loss'];
   if(a&&b)ex.push(a.split(' ')[0]+' vs '+b.split(' ')[0]);
   if(pRows.length){const top=pRows.reduce((x,r)=>r.pts>x.pts?r:x);
-    ex.push('week '+latest.week+' '+latest.year);
+    ex.push('week '+latest.week+' '+latest.year,'recap','hall of shame','coach rating','luckiest manager',(latest.year-1)+' season');
     if(a)ex.push(a.split(' ')[0].toLowerCase()+' lineup week '+latest.week+' '+latest.year);
     ex.push(top.name.toLowerCase()+' week '+top.week+' '+top.year,'highest player score ever','best QB score this season','biggest bench score');
     $('#q').placeholder='Ask anything: lowest score in week 5, or a player and a week'}
@@ -532,6 +839,14 @@ function start(d){
   const tiles=[['All-time lowest score','lowest score ever'],['All-time highest score','highest score ever'],['Biggest blowout','biggest blowout ever'],['Most championships','who won the league']];
   $('#tiles').innerHTML=tiles.map(([t,q])=>{const r=answer(q);const parts=r.big.split(' · ');
     return '<button type="button" class="tile" data-q="'+esc(q)+'"><span>'+esc(t)+'</span><b>'+esc(parts[1]||parts[0])+'</b><span>'+esc(parts[1]?parts[0]:r.sub)+'</span></button>'}).join('');
+  if(latest.year){const yr=latest.year,wk=latest.week,sl=scores.filter(s=>s.year===yr&&s.week===wk&&!s.side&&s.opp);
+    if(sl.length){const hiS=sl.reduce((a,b)=>b.pts>a.pts?b:a),loS=sl.reduce((a,b)=>b.pts<a.pts?b:a),bp=pRows.filter(r=>r.year===yr&&r.week===wk&&r.slot===0).sort((a,b)=>b.pts-a.pts)[0];
+      const it=(t,v,x)=>'<div><span>'+esc(t)+'</span><b>'+esc(v)+'</b><small>'+esc(x)+'</small></div>';
+      $('#home').insertAdjacentHTML('afterbegin','<button type="button" class="banner" data-q="week '+wk+' '+yr+'"><div class="bt">Week '+wk+', '+yr+'<small>tap for every matchup</small></div><div class="bs">'+
+        it('Top score',p2(hiS.pts),nm(hiS.m))+it('Wooden spoon',p2(loS.pts),nm(loS.m))+(bp?it('Bench blunder',p2(bp.pts),bp.name+' benched by '+nm(bp.m)):'')+'</div></button>')}}
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-copy]');if(!b)return;const el=document.getElementById(b.dataset.copy);
+    const sel=()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected, press copy'};
+    try{navigator.clipboard.writeText(el.textContent).then(()=>{b.textContent='Copied'},sel)}catch(x){sel()}});
   const dt=d.updated?new Date(d.updated):null;
   $('#foot').textContent=seasons.length+' seasons ('+seasons[0].year+' to '+seasons[seasons.length-1].year+'), '+games.length+' finished games'+(pRows.length?', '+pRows.length.toLocaleString()+' player scores':'')+(dt&&!isNaN(dt)?' · updated '+dt.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'');
   const cur=seasons[seasons.length-1],names=[...new Set(cur.teams.map(t=>nm(t.managerId)))].sort();
